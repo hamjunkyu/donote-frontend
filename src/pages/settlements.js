@@ -1,35 +1,19 @@
 import { api } from '../api.js';
 import { formatCurrency } from '../utils/formatters.js';
+import { createPageLayout, bindLayoutEvents } from '../utils/layout.js';
 
 export function renderSettlements() {
   const div = document.createElement('div');
   
-  div.innerHTML = `
-    <header class="app-header">
-      <div class="header-content">
-        <div class="logo">Donote</div>
-        <nav class="header-nav" style="flex-wrap: wrap;">
-          <a href="#/" class="nav-link">홈</a>
-          <a href="#/transactions" class="nav-link">내역</a>
-          <a href="#/statistics" class="nav-link">통계</a>
-          <a href="#/budget" class="nav-link">예산</a>
-          <a href="#/settlements" class="nav-link active">정산</a>
-          <a href="#/goals" class="nav-link">목표</a>
-          <a href="#/notifications" class="nav-link">알림</a>
-        </nav>
-      </div>
-    </header>
-    
-    <main class="container" style="padding-bottom: 80px;">
-      <div class="flex-between mb-4">
-        <h2>내 정산 목록</h2>
-      </div>
+  const contentHtml = `
+    <div class="flex-between mb-4">
+      <h2 style="font-size: 1.5rem;">내 정산 목록</h2>
+      <button class="btn btn-primary" id="btn-add-settlement" style="width: auto; padding: 0.4rem 1rem; font-size: 0.85rem;">정산 추가</button>
+    </div>
       
       <div id="settlement-list">
         <div class="text-center text-muted mt-4">로딩 중...</div>
       </div>
-
-      <button class="fab" id="fab-add-settlement">+</button>
 
       <!-- 정산 생성 모달 -->
       <dialog id="settlement-modal" style="border: none; border-radius: var(--radius-lg); padding: var(--spacing-lg); width: 90%; max-width: 450px; box-shadow: var(--shadow-lg);">
@@ -66,12 +50,14 @@ export function renderSettlements() {
           </div>
         </form>
       </dialog>
-    </main>
+    </dialog>
   `;
+
+  div.innerHTML = createPageLayout('settlements', contentHtml);
 
   const listContainer = div.querySelector('#settlement-list');
   const modal = div.querySelector('#settlement-modal');
-  const fab = div.querySelector('#fab-add-settlement');
+  const addBtn = div.querySelector('#btn-add-settlement');
   const form = div.querySelector('#settlement-form');
   const txSelect = div.querySelector('#s-transaction');
   const splitTypeSelect = div.querySelector('#s-split-type');
@@ -144,10 +130,10 @@ export function renderSettlements() {
         // 개별 완료 처리
         card.querySelectorAll('.btn-settle').forEach(btn => {
           btn.addEventListener('click', async (e) => {
-            if(confirm('이 인원의 정산을 완료 처리할까요?')) {
-              await api.patch(`/api/settlements/participants/${e.target.dataset.pid}/settle`);
-              loadSettlements();
-            }
+            e.preventDefault();
+            e.stopPropagation();
+            await api.patch(`/api/settlements/participants/${e.target.dataset.pid}/settle`);
+            loadSettlements();
           });
         });
 
@@ -155,13 +141,13 @@ export function renderSettlements() {
         const btnCompleteAll = card.querySelector('.btn-complete-all');
         if (btnCompleteAll) {
           btnCompleteAll.addEventListener('click', async (e) => {
-            if(confirm('정산을 최종 완료하시겠습니까? (모든 참여자가 정산 완료 상태여야 합니다)')) {
-              try {
-                await api.patch(`/api/settlements/${e.target.dataset.sid}/complete`);
-                loadSettlements();
-              } catch (err) {
-                alert(err.message || '아직 완료되지 않은 인원이 있습니다.');
-              }
+            e.preventDefault();
+            e.stopPropagation();
+            try {
+              await api.patch(`/api/settlements/${e.target.dataset.sid}/complete`);
+              loadSettlements();
+            } catch (err) {
+              alert(err.message || '아직 완료되지 않은 인원이 있습니다.');
             }
           });
         }
@@ -221,7 +207,7 @@ export function renderSettlements() {
   addPersonBtn.addEventListener('click', addParticipantRow);
   splitTypeSelect.addEventListener('change', renderParticipantInputs);
 
-  fab.addEventListener('click', () => {
+  addBtn.addEventListener('click', () => {
     form.reset();
     participantList.innerHTML = '';
     addParticipantRow(); // 기본 1명 (본인)
@@ -291,6 +277,7 @@ export function renderSettlements() {
 
   loadTransactionsForDropdown();
   loadSettlements();
+  bindLayoutEvents(div);
 
   return div;
 }

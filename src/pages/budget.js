@@ -1,31 +1,17 @@
 import { api } from '../api.js';
 import { formatCurrency, getCurrentMonthStr } from '../utils/formatters.js';
+import { createPageLayout, bindLayoutEvents } from '../utils/layout.js';
+import { renderCategoryWithIcon } from '../utils/category-icons.js';
 
 export function renderBudget() {
   const div = document.createElement('div');
   const monthStr = getCurrentMonthStr();
   
-  div.innerHTML = `
-    <header class="app-header">
-      <div class="header-content">
-        <div class="logo">Donote</div>
-        <nav class="header-nav">
-          <a href="#/" class="nav-link">홈</a>
-          <a href="#/transactions" class="nav-link">내역</a>
-          <a href="#/statistics" class="nav-link">통계</a>
-          <a href="#/budget" class="nav-link active">예산</a>
-          <a href="#/settlements" class="nav-link">정산</a>
-          <a href="#/goals" class="nav-link">목표</a>
-          <a href="#/notifications" class="nav-link">알림</a>
-        </nav>
-      </div>
-    </header>
-    
-    <main class="container" style="padding-bottom: 80px;">
-      <div class="flex-between mb-4">
-        <h2>${monthStr.split('-')[0]}년 ${parseInt(monthStr.split('-')[1])}월 예산</h2>
-        <button class="btn btn-primary" id="btn-add-budget" style="width: auto; padding: 0.5rem 1rem;">예산 설정</button>
-      </div>
+  const contentHtml = `
+    <div class="flex-between mb-4">
+      <h2 style="font-size: 1.5rem;">${monthStr.split('-')[0]}년 ${parseInt(monthStr.split('-')[1])}월 예산</h2>
+      <button class="btn btn-primary" id="btn-add-budget" style="width: auto; padding: 0.5rem 1rem; font-size: 0.85rem;">예산 설정</button>
+    </div>
       
       <!-- 전체 예산 요약 -->
       <div class="card" id="overall-budget">
@@ -36,7 +22,7 @@ export function renderBudget() {
       <div id="category-budgets">
         <div class="text-center text-muted" style="padding: var(--spacing-lg);">로딩 중...</div>
       </div>
-
+ 
       <!-- 모달: 예산 설정 -->
       <dialog id="budget-modal" style="border: none; border-radius: var(--radius-lg); padding: var(--spacing-lg); width: 90%; max-width: 400px; box-shadow: var(--shadow-lg);">
         <h3 class="mb-4">예산 설정</h3>
@@ -58,8 +44,10 @@ export function renderBudget() {
           </div>
         </form>
       </dialog>
-    </main>
+
   `;
+
+  div.innerHTML = createPageLayout('budget', contentHtml);
 
   const overallContainer = div.querySelector('#overall-budget');
   const categoriesContainer = div.querySelector('#category-budgets');
@@ -100,10 +88,10 @@ export function renderBudget() {
         `;
         
         overallContainer.querySelector('#delete-overall')?.addEventListener('click', async (e) => {
-          if(confirm('전체 예산을 삭제하시겠습니까?')) {
-            await api.delete(`/api/budgets/${e.target.dataset.id}`);
-            loadBudgets();
-          }
+          e.preventDefault();
+          e.stopPropagation();
+          await api.delete(`/api/budgets/${e.target.dataset.id}`);
+          loadBudgets();
         });
       } else {
         overallContainer.innerHTML = '<div class="text-center text-muted">설정된 전체 예산이 없습니다.</div>';
@@ -124,10 +112,10 @@ export function renderBudget() {
           `;
           
           card.querySelector('button').addEventListener('click', async (e) => {
-            if(confirm('이 카테고리 예산을 삭제하시겠습니까?')) {
-              await api.delete(`/api/budgets/${e.target.dataset.id}`);
-              loadBudgets();
-            }
+            e.preventDefault();
+            e.stopPropagation();
+            await api.delete(`/api/budgets/${e.target.dataset.id}`);
+            loadBudgets();
           });
           
           categoriesContainer.appendChild(card);
@@ -196,6 +184,7 @@ export function renderBudget() {
 
   loadBudgets();
   loadCategories();
+  bindLayoutEvents(div);
 
   return div;
 }

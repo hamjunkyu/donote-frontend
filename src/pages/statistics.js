@@ -1,5 +1,6 @@
 import { api } from '../api.js';
 import { formatCurrency, getCurrentMonthStr } from '../utils/formatters.js';
+import { createPageLayout, bindLayoutEvents } from '../utils/layout.js';
 
 export function renderStatistics() {
   const div = document.createElement('div');
@@ -11,24 +12,10 @@ export function renderStatistics() {
   const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
   const dateTo = `${monthStr}-${String(lastDay).padStart(2, '0')}`;
 
-  div.innerHTML = `
-    <header class="app-header">
-      <div class="header-content">
-        <div class="logo">Donote</div>
-        <nav class="header-nav" style="flex-wrap: wrap;">
-          <a href="#/" class="nav-link">홈</a>
-          <a href="#/transactions" class="nav-link">내역</a>
-          <a href="#/statistics" class="nav-link active">통계</a>
-          <a href="#/budget" class="nav-link">예산</a>
-          <a href="#/settlements" class="nav-link">정산</a>
-          <a href="#/goals" class="nav-link">목표</a>
-          <a href="#/notifications" class="nav-link">알림</a>
-        </nav>
-      </div>
-    </header>
-    
-    <main class="container" style="padding-bottom: 80px;">
-      <h2 class="mb-4">${year}년 ${parseInt(month)}월 소비 통계</h2>
+  const contentHtml = `
+    <div class="flex-between mb-4">
+      <h2 style="font-size: 1.5rem;">${year}년 ${parseInt(month)}월 통계</h2>
+    </div>
       
       <div class="card mb-4" id="stats-summary" style="display: none;">
         <h3 class="mb-2">요약</h3>
@@ -51,8 +38,9 @@ export function renderStatistics() {
           지출 내역이 없습니다.
         </div>
       </div>
-    </main>
   `;
+
+  div.innerHTML = createPageLayout('statistics', contentHtml);
 
   let chartInstance = null;
 
@@ -131,8 +119,8 @@ export function renderStatistics() {
   };
 
   // 컴포넌트 마운트 시 데이터 로드
-  // DOM에 연결된 후 약간의 딜레이를 주어 캔버스가 렌더링 되도록 함
   setTimeout(loadData, 100);
+  bindLayoutEvents(div);
 
   return div;
 }

@@ -12,6 +12,8 @@ import { renderStatistics } from './pages/statistics.js';
 import { renderSettlements } from './pages/settlements.js';
 import { renderNotifications } from './pages/notifications.js';
 import { renderGoals } from './pages/goals.js';
+import { renderCsvImport } from './pages/csv-import.js';
+import { renderCategories } from './pages/categories.js';
 
 // 라우트 등록
 registerRoute('/login', renderLogin);
@@ -23,6 +25,8 @@ registerRoute('/budget', renderBudget);
 registerRoute('/settlements', renderSettlements);
 registerRoute('/notifications', renderNotifications);
 registerRoute('/goals', renderGoals);
+registerRoute('/import', renderCsvImport);
+registerRoute('/categories', renderCategories);
 
 import { api } from './api.js';
 

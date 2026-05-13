@@ -65,41 +65,4 @@ button {
   padding: var(--spacing-lg);
 }
 
-/* Header */
-.app-header {
-  background-color: var(--color-surface);
-  box-shadow: var(--shadow-sm);
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-
-.header-content {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--spacing-md) var(--spacing-lg);
-  max-width: 600px;
-  margin: 0 auto;
-}
-
-.logo {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--color-primary);
-}
-
-.header-nav {
-  display: flex;
-  gap: var(--spacing-md);
-}
-
-.nav-link {
-  color: var(--color-text-secondary);
-  font-weight: 500;
-  transition: color 0.2s;
-}
-
-.nav-link:hover, .nav-link.active {
-  color: var(--color-primary);
-}
+/* The app layout will be handled by layout.js and specific layout CSS */

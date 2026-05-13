@@ -1,31 +1,20 @@
 import { api } from '../api.js';
+import { createPageLayout, bindLayoutEvents } from '../utils/layout.js';
 
 export function renderNotifications() {
   const div = document.createElement('div');
   
-  div.innerHTML = `
-    <header class="app-header">
-      <div class="header-content">
-        <div class="logo">Donote</div>
-        <nav class="header-nav" style="flex-wrap: wrap;">
-          <a href="#/" class="nav-link">홈</a>
-          <a href="#/transactions" class="nav-link">내역</a>
-          <a href="#/statistics" class="nav-link">통계</a>
-          <a href="#/budget" class="nav-link">예산</a>
-          <a href="#/settlements" class="nav-link">정산</a>
-          <a href="#/goals" class="nav-link">목표</a>
-          <a href="#/notifications" class="nav-link active">알림</a>
-        </nav>
-      </div>
-    </header>
-    
-    <main class="container" style="padding-bottom: 80px;">
-      <h2 class="mb-4">새로운 소식</h2>
+  const contentHtml = `
+    <div class="flex-between mb-4">
+      <h2 style="font-size: 1.5rem;">새로운 소식</h2>
+    </div>
       <div id="notification-list">
         <div class="text-center text-muted mt-4">로딩 중...</div>
       </div>
-    </main>
+    </div>
   `;
+
+  div.innerHTML = createPageLayout('notifications', contentHtml);
 
   const listContainer = div.querySelector('#notification-list');
 
@@ -57,6 +46,7 @@ export function renderNotifications() {
         if (noti.type === 'BUDGET_EXCEEDED') title = '🚨 예산 100% 초과';
         else if (noti.type === 'BUDGET_WARNING') title = '⚠️ 예산 80% 도달';
         else if (noti.type === 'SETTLEMENT_REQUEST') title = '💸 정산 요청';
+        else if (noti.type === 'GOAL_ACHIEVED') title = '🎉 목표 달성';
 
         card.innerHTML = `
           <div class="flex-between">
@@ -87,6 +77,7 @@ export function renderNotifications() {
   };
 
   loadNotifications();
+  bindLayoutEvents(div);
 
   return div;
 }

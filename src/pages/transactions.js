@@ -1,198 +1,349 @@
 import { api } from '../api.js';
 import { formatCurrency, formatDate } from '../utils/formatters.js';
+import { createPageLayout, bindLayoutEvents } from '../utils/layout.js';
+import { renderCategoryWithIcon } from '../utils/category-icons.js';
 
 export function renderTransactions() {
   const div = document.createElement('div');
-  div.innerHTML = `
-    <header class="app-header">
-      <div class="header-content">
-        <div class="logo">Donote</div>
-        <nav class="header-nav">
-          <a href="#/" class="nav-link">홈</a>
-          <a href="#/transactions" class="nav-link active">내역</a>
-          <a href="#/statistics" class="nav-link">통계</a>
-          <a href="#/budget" class="nav-link">예산</a>
-          <a href="#/settlements" class="nav-link">정산</a>
-          <a href="#/goals" class="nav-link">목표</a>
-          <a href="#/notifications" class="nav-link">알림</a>
-        </nav>
+  
+  const contentHtml = `
+    <div class="flex-between mb-4">
+      <h2 style="font-size: 1.5rem; margin: 0; font-weight: 700;">거래 내역</h2>
+      <div style="display: flex; gap: var(--spacing-sm); align-items: center;">
+        <select id="filter-type" class="form-control" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.85rem; border-radius: var(--radius-md); background-color: var(--color-background); border: 1px solid var(--color-border);">
+          <option value="">전체 내역</option>
+          <option value="EXPENSE">지출만</option>
+          <option value="INCOME">수입만</option>
+        </select>
+        <button class="btn btn-primary" id="btn-add-tx" style="width: auto; padding: 0.45rem 1rem; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 4px;">
+          + 내역 추가
+        </button>
       </div>
-    </header>
+    </div>
     
-    <main class="container" style="padding-bottom: 80px;">
-      <div class="flex-between mb-4">
-        <h2>전체 거래 내역</h2>
-      </div>
-      
-      <div id="tx-list">
-        <div style="text-align: center; color: var(--color-text-secondary); margin-top: 50px;">
-          로딩 중...
+    <div id="tx-list">
+      <div class="text-center text-muted mt-4">로딩 중...</div>
+    </div>
+
+    <!-- 거래 추가/수정 모달 -->
+    <dialog id="tx-modal" style="border: none; border-radius: var(--radius-lg); padding: var(--spacing-lg); width: 90%; max-width: 450px; box-shadow: var(--shadow-lg);">
+      <h3 class="mb-4" id="tx-modal-title">새 거래 추가</h3>
+      <form id="tx-form">
+        <input type="hidden" id="tx-edit-id" value="" />
+        
+        <!-- 수입/지출 탭 토글 -->
+        <div class="tab-toggle-container">
+          <div class="tab-toggle-btn active expense" data-val="EXPENSE">지출</div>
+          <div class="tab-toggle-btn income" data-val="INCOME">수입</div>
         </div>
-      </div>
+        <input type="hidden" id="tx-type" value="EXPENSE" required />
 
-      <!-- 플로팅 액션 버튼 (추가) -->
-      <button class="fab" id="fab-add-tx">+</button>
-
-      <!-- 모달: 거래 추가 -->
-      <dialog id="tx-modal" style="border: none; border-radius: var(--radius-lg); padding: var(--spacing-lg); width: 90%; max-width: 400px; box-shadow: var(--shadow-lg);">
-        <h3 class="mb-4">새 거래 추가</h3>
-        <form id="tx-form">
-          <div class="form-group">
-            <label class="form-label">유형</label>
-            <select id="tx-type" class="form-control" required>
-              <option value="EXPENSE">지출</option>
-              <option value="INCOME">수입</option>
-            </select>
+        <div class="form-group mt-4">
+          <label class="form-label">금액</label>
+          <input type="number" id="tx-amount" class="form-control" placeholder="예) 5000" min="1" required style="font-size: 1.25rem; font-weight: 600;" />
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">날짜 및 시간</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="date" id="tx-date" class="form-control" required style="flex: 2;" />
+            <input type="time" id="tx-time" class="form-control" style="flex: 1;" />
           </div>
-          <div class="form-group">
-            <label class="form-label">카테고리</label>
-            <select id="tx-category" class="form-control" required>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label">금액 (원)</label>
-            <input type="number" id="tx-amount" class="form-control" required min="0">
-          </div>
-          <div class="form-group">
-            <label class="form-label">날짜</label>
-            <input type="date" id="tx-date" class="form-control" required>
-          </div>
-          <div class="form-group mb-4">
-            <label class="form-label">내용</label>
-            <input type="text" id="tx-desc" class="form-control" required placeholder="예: 스타벅스 커피">
-          </div>
-          <div class="flex-between">
-            <button type="button" class="btn btn-outline" id="tx-cancel" style="width: 48%;">취소</button>
-            <button type="submit" class="btn btn-primary" style="width: 48%;">저장</button>
-          </div>
-        </form>
-      </dialog>
-    </main>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">카테고리</label>
+          <select id="tx-category" class="form-control" required>
+            <option value="">선택하세요</option>
+          </select>
+        </div>
+        
+        <div class="form-group mb-4">
+          <label class="form-label">내용 (선택)</label>
+          <input type="text" id="tx-desc" class="form-control" placeholder="예) 스타벅스 커피" />
+        </div>
+        
+        <div class="flex-between">
+          <button type="button" class="btn btn-outline" id="tx-cancel" style="width: 48%;">취소</button>
+          <button type="submit" class="btn btn-primary" id="tx-submit" style="width: 48%;">저장</button>
+        </div>
+      </form>
+    </dialog>
   `;
 
-  const txList = div.querySelector('#tx-list');
+  div.innerHTML = createPageLayout('transactions', contentHtml);
+
+  const listContainer = div.querySelector('#tx-list');
   const modal = div.querySelector('#tx-modal');
-  const fab = div.querySelector('#fab-add-tx');
   const form = div.querySelector('#tx-form');
-  const cancelBtn = div.querySelector('#tx-cancel');
+  const filterType = div.querySelector('#filter-type');
   const categorySelect = div.querySelector('#tx-category');
 
   let allCategories = [];
+  let currentTransactions = [];
+
+  // 현재 날짜/시간 포맷팅 유틸
+  const getNowStr = () => {
+    const now = new Date();
+    const date = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    return { date, time };
+  };
+
+  // 탭 토글 로직
+  const typeInput = div.querySelector('#tx-type');
+  div.querySelectorAll('.tab-toggle-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      div.querySelectorAll('.tab-toggle-btn').forEach(b => b.classList.remove('active'));
+      const target = e.currentTarget;
+      target.classList.add('active');
+      typeInput.value = target.dataset.val;
+      
+      // 유형 변경 시 카테고리 목록 리렌더링
+      renderCategoryOptions(typeInput.value);
+    });
+  });
 
   const loadCategories = async () => {
     try {
       allCategories = await api.get('/api/categories/');
-      updateCategoryOptions('EXPENSE');
     } catch (err) {
-      console.error('Failed to load categories', err);
+      console.error('카테고리 로드 실패', err);
     }
   };
 
-  const updateCategoryOptions = (type) => {
-    categorySelect.innerHTML = '';
+  const renderCategoryOptions = (type) => {
     const filtered = allCategories.filter(c => c.type === type);
+    categorySelect.innerHTML = '<option value="">선택하세요</option>';
     filtered.forEach(c => {
       const opt = document.createElement('option');
       opt.value = c.id;
+      // 이모지는 select 안에서 렌더링되지 않으므로 텍스트만 표시
       opt.textContent = c.name;
       categorySelect.appendChild(opt);
     });
   };
 
-  div.querySelector('#tx-type').addEventListener('change', (e) => {
-    updateCategoryOptions(e.target.value);
-  });
+  const renderList = () => {
+    listContainer.innerHTML = '';
+    const filterVal = filterType.value;
+    
+    let filtered = currentTransactions;
+    if (filterVal) {
+      filtered = currentTransactions.filter(t => t.type === filterVal);
+    }
 
-  // 데이터 로드
-  const loadTransactions = async () => {
-    try {
-      const transactions = await api.get('/transactions/');
-      txList.innerHTML = '';
+    if (filtered.length === 0) {
+      listContainer.innerHTML = '<div class="card text-center text-muted" style="padding: 3rem 1rem;">거래 내역이 없습니다.</div>';
+      return;
+    }
 
-      if (transactions.length === 0) {
-        txList.innerHTML = '<div class="card text-center text-muted">등록된 거래 내역이 없습니다.</div>';
-        return;
+    // 날짜별 그룹핑 로직
+    let currentDate = '';
+    let dailyTotal = 0;
+    let currentGroupContainer = null;
+
+    // 날짜별 요약 생성을 위한 임시 함수
+    const createDateHeader = (dateStr) => {
+      const wrap = document.createElement('div');
+      wrap.style.marginBottom = '1.5rem';
+      
+      const header = document.createElement('div');
+      header.className = 'flex-between';
+      header.style.padding = '0.5rem 0';
+      header.style.borderBottom = '2px solid var(--color-border)';
+      header.style.marginBottom = '0.5rem';
+      
+      const dateEl = document.createElement('div');
+      dateEl.style.fontWeight = '700';
+      dateEl.style.fontSize = '1.1rem';
+      dateEl.textContent = formatDate(dateStr);
+      
+      const summaryEl = document.createElement('div');
+      summaryEl.className = 'daily-summary'; // 추후 계산 후 업데이트
+      summaryEl.style.fontSize = '0.9rem';
+      summaryEl.style.fontWeight = '600';
+      
+      header.appendChild(dateEl);
+      header.appendChild(summaryEl);
+      wrap.appendChild(header);
+      
+      return { wrap, summaryEl };
+    };
+
+    filtered.forEach(tx => {
+      if (tx.transaction_date !== currentDate) {
+        // 이전 그룹 요약 업데이트
+        if (currentGroupContainer && dailyTotal !== 0) {
+          const s = currentGroupContainer.summaryEl;
+          s.textContent = (dailyTotal > 0 ? '+' : '') + formatCurrency(dailyTotal);
+          s.style.color = dailyTotal > 0 ? 'var(--color-income)' : 'var(--color-expense)';
+        }
+        
+        currentDate = tx.transaction_date;
+        dailyTotal = 0;
+        
+        const groupInfo = createDateHeader(currentDate);
+        currentGroupContainer = groupInfo;
+        listContainer.appendChild(groupInfo.wrap);
       }
 
-      transactions.forEach(tx => {
-        const card = document.createElement('div');
-        card.className = 'card flex-between';
-        card.style.marginBottom = 'var(--spacing-sm)';
-        
-        const isExpense = tx.type === 'EXPENSE';
-        const colorClass = isExpense ? 'text-expense' : 'text-income';
-        const sign = isExpense ? '-' : '+';
+      const isIncome = tx.type === 'INCOME';
+      dailyTotal += isIncome ? tx.amount : -tx.amount;
 
-        card.innerHTML = `
-          <div>
-            <div style="font-weight: 600;">${tx.description || '내용 없음'}</div>
-            <div class="text-muted" style="font-size: 0.875rem;">${tx.transaction_date}</div>
-          </div>
-          <div style="text-align: right;">
-            <div class="${colorClass}" style="font-weight: 700; font-size: 1.125rem;">
-              ${sign}${formatCurrency(tx.amount)}
-            </div>
-            <button class="text-muted" style="font-size: 0.75rem; text-decoration: underline;" data-id="${tx.id}">삭제</button>
-          </div>
-        `;
-        
-        // 삭제 버튼 이벤트
-        const deleteBtn = card.querySelector('button');
-        deleteBtn.addEventListener('click', async () => {
-          if (confirm('정말로 삭제하시겠습니까? (연결된 정산이 있다면 실패할 수 있습니다)')) {
-            try {
-              await api.delete(`/transactions/${tx.id}`);
-              loadTransactions(); // 새로고침
-            } catch (err) {
-              alert(`삭제 실패: ${err.message}`);
-            }
-          }
-        });
+      const card = document.createElement('div');
+      card.className = 'card tx-card';
+      card.style.borderLeft = `4px solid ${isIncome ? 'var(--color-income)' : 'var(--color-expense)'}`;
+      card.style.marginBottom = 'var(--spacing-sm)';
+      card.style.padding = '0.75rem 1rem';
 
-        txList.appendChild(card);
+      card.innerHTML = `
+        <div style="flex: 1;">
+          <div style="font-size: 0.85rem; margin-bottom: 4px;">
+            ${renderCategoryWithIcon(tx.category_name, tx.type)}
+          </div>
+          <div style="font-weight: 500; color: var(--color-text-primary);">
+            ${tx.description || '내용 없음'}
+          </div>
+          <div class="text-muted" style="font-size: 0.75rem; margin-top: 2px;">
+            ${tx.transaction_time ? tx.transaction_time.substring(0,5) : ''}
+          </div>
+        </div>
+        <div style="text-align: right;">
+          <div style="font-weight: 700; font-size: 1.1rem; margin-bottom: 4px; color: ${isIncome ? 'var(--color-income)' : 'var(--color-text-primary)'}">
+            ${isIncome ? '+' : '-'}${formatCurrency(tx.amount)}
+          </div>
+          <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+            <button class="btn-edit" style="font-size: 0.75rem; color: var(--color-primary);">수정</button>
+            <button class="btn-delete" style="font-size: 0.75rem; color: var(--color-text-secondary);">삭제</button>
+          </div>
+        </div>
+      `;
+
+      // 수정
+      card.querySelector('.btn-edit').addEventListener('click', () => openEditModal(tx));
+      
+      // 삭제
+      card.querySelector('.btn-delete').addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        try {
+          await api.delete(`/transactions/${tx.id}`);
+          loadTransactions();
+        } catch(err) {
+          alert('삭제 실패: ' + err.message);
+        }
       });
-    } catch (error) {
-      txList.innerHTML = '<div class="alert alert-important">내역을 불러오지 못했습니다.</div>';
+
+      currentGroupContainer.wrap.appendChild(card);
+    });
+    
+    // 마지막 그룹 요약 업데이트
+    if (currentGroupContainer && dailyTotal !== 0) {
+      const s = currentGroupContainer.summaryEl;
+      s.textContent = (dailyTotal > 0 ? '+' : '') + formatCurrency(dailyTotal);
+      s.style.color = dailyTotal > 0 ? 'var(--color-income)' : 'var(--color-expense)';
     }
   };
 
-  // 모달 제어
-  fab.addEventListener('click', () => {
+  const loadTransactions = async () => {
+    try {
+      listContainer.innerHTML = '<div class="text-center text-muted mt-4">로딩 중...</div>';
+      currentTransactions = await api.get('/transactions/');
+      renderList();
+    } catch (err) {
+      listContainer.innerHTML = '<div class="alert alert-important">내역을 불러오지 못했습니다.</div>';
+    }
+  };
+
+  filterType.addEventListener('change', renderList);
+  
+  // 새 거래 내역 추가 버튼 연결
+  const addBtn = div.querySelector('#btn-add-tx');
+  addBtn.addEventListener('click', () => {
+    div.querySelector('#tx-modal-title').textContent = '새 거래 추가';
+    div.querySelector('#tx-edit-id').value = '';
     form.reset();
-    document.getElementById('tx-date').value = new Date().toISOString().split('T')[0];
+    
+    // 기본적으로 지출 탭 토글 활성화
+    div.querySelectorAll('.tab-toggle-btn').forEach(b => b.classList.remove('active'));
+    div.querySelector('.tab-toggle-btn.expense').classList.add('active');
+    typeInput.value = 'EXPENSE';
+    renderCategoryOptions('EXPENSE');
+    
+    // 현재 날짜/시간 프리필(Prefill)
+    const now = getNowStr();
+    div.querySelector('#tx-date').value = now.date;
+    div.querySelector('#tx-time').value = now.time;
+    
     modal.showModal();
   });
 
-  cancelBtn.addEventListener('click', () => {
-    modal.close();
-  });
+  // 모달 제어
+  const openEditModal = (tx) => {
+    div.querySelector('#tx-modal-title').textContent = '거래 내역 수정';
+    div.querySelector('#tx-edit-id').value = tx.id;
+    
+    // 탭 갱신
+    div.querySelectorAll('.tab-toggle-btn').forEach(b => b.classList.remove('active'));
+    const activeTab = div.querySelector(`.tab-toggle-btn[data-val="${tx.type}"]`);
+    activeTab.classList.add('active');
+    typeInput.value = tx.type;
+    
+    renderCategoryOptions(tx.type);
+    
+    div.querySelector('#tx-amount').value = tx.amount;
+    div.querySelector('#tx-date').value = tx.transaction_date;
+    div.querySelector('#tx-time').value = tx.transaction_time || '';
+    div.querySelector('#tx-category').value = tx.category_id;
+    div.querySelector('#tx-desc').value = tx.description || '';
+    
+    modal.showModal();
+  };
 
-  // 폼 제출 (추가)
+
+
+  div.querySelector('#tx-cancel').addEventListener('click', () => modal.close());
+
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    
-    // UUID v4 형식의 더미 카테고리 ID (기본 카테고리) - 백엔드 모델에 따라 유효한 ID 필요
-    // 일단 백엔드 모델을 확인해야하지만, 임시로 처리
+    const btnSubmit = div.querySelector('#tx-submit');
+    btnSubmit.disabled = true;
+
+    const editId = div.querySelector('#tx-edit-id').value;
     const payload = {
-      type: document.getElementById('tx-type').value,
-      category_id: document.getElementById('tx-category').value,
-      amount: parseFloat(document.getElementById('tx-amount').value),
-      description: document.getElementById('tx-desc').value,
-      transaction_date: document.getElementById('tx-date').value,
-      transaction_time: "12:00:00"
+      type: typeInput.value,
+      amount: parseFloat(div.querySelector('#tx-amount').value),
+      category_id: div.querySelector('#tx-category').value,
+      transaction_date: div.querySelector('#tx-date').value,
     };
+    
+    const timeVal = div.querySelector('#tx-time').value;
+    if (timeVal) payload.transaction_time = timeVal;
+    
+    const descVal = div.querySelector('#tx-desc').value;
+    if (descVal) payload.description = descVal;
 
     try {
-      await api.post('/transactions/', payload);
+      if (editId) {
+        await api.patch(`/transactions/${editId}`, payload);
+      } else {
+        await api.post('/transactions/', payload);
+      }
       modal.close();
-      loadTransactions(); // 새로고침
+      loadTransactions();
     } catch (err) {
-      alert(`추가 실패: ${err.message}`);
+      alert((editId ? '수정' : '추가') + ' 실패: ' + err.message);
+    } finally {
+      btnSubmit.disabled = false;
     }
   });
 
-  loadCategories();
-  loadTransactions();
+  // 초기화 로직
+  loadCategories().then(() => {
+    loadTransactions();
+  });
+  bindLayoutEvents(div);
 
   return div;
 }
