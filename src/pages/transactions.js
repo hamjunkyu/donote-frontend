@@ -342,6 +342,11 @@ export function renderTransactions() {
   // 초기화 로직
   loadCategories().then(() => {
     loadTransactions();
+    // 다른 페이지의 FAB/빈 상태 CTA에서 진입한 경우 모달 자동 오픈
+    if (sessionStorage.getItem('open_tx_modal')) {
+      sessionStorage.removeItem('open_tx_modal');
+      addBtn.click();
+    }
   });
   bindLayoutEvents(div);
 

@@ -1,7 +1,7 @@
 export function createPageLayout(activeNav, contentHtml) {
   const navItems = [
     { id: 'dashboard', href: '#/', icon: '📊', label: '홈' },
-    { id: 'transactions', href: '#/transactions', icon: '📝', label: '내역' },
+    { id: 'transactions', href: '#/transactions', icon: '📝', label: '거래 내역' },
     { id: 'statistics', href: '#/statistics', icon: '📈', label: '통계' },
     { id: 'budget', href: '#/budget', icon: '🎯', label: '예산' },
     { id: 'settlements', href: '#/settlements', icon: '🤝', label: '정산' },
@@ -11,7 +11,7 @@ export function createPageLayout(activeNav, contentHtml) {
     { id: 'notifications', href: '#/notifications', icon: '🔔', label: '알림' }
   ];
 
-  // 모바일 하단 네비게이션용 (핵심 기능만)
+  // 모바일 하단 네비게이션용 (핵심 기능만, 아이콘 있어 짧은 라벨 사용)
   const mobileNavItems = [
     { id: 'dashboard', href: '#/', icon: '📊', label: '홈' },
     { id: 'transactions', href: '#/transactions', icon: '📝', label: '내역' },
@@ -22,6 +22,7 @@ export function createPageLayout(activeNav, contentHtml) {
 
   const sidebarLinksHtml = navItems.map(item => `
     <a href="${item.href}" class="sidebar-link ${activeNav === item.id ? 'active' : ''}">
+      <span class="nav-icon">${item.icon}</span>
       <span class="nav-label">${item.label}</span>
     </a>
   `).join('');

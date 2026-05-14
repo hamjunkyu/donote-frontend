@@ -47,6 +47,9 @@ export function renderDashboard() {
     <div id="recent-transactions">
       <div class="text-center text-muted mt-4">로딩 중...</div>
     </div>
+
+    <!-- 빠른 거래 추가 FAB -->
+    <button class="fab" id="btn-fab-add" aria-label="거래 추가" title="거래 추가">+</button>
   `;
 
   div.innerHTML = createPageLayout('dashboard', contentHtml);
@@ -107,11 +110,13 @@ export function renderDashboard() {
 
       if (recentTx.length === 0) {
         txContainer.innerHTML = `
-          <div class="card text-center text-muted" style="padding: 3rem 1rem;">
+          <div class="card text-center" style="padding: 3rem 1rem;">
             <div style="font-size: 2rem; margin-bottom: 0.5rem;">📝</div>
-            등록된 최근 거래 내역이 없습니다.
+            <div class="text-muted mb-4">등록된 최근 거래 내역이 없습니다.</div>
+            <button class="btn btn-primary" id="btn-add-from-empty" style="width: auto; padding: 0.5rem 1.25rem; font-size: 0.9rem;">+ 거래 추가하기</button>
           </div>
         `;
+        txContainer.querySelector('#btn-add-from-empty').addEventListener('click', goToAddTransaction);
         return;
       }
 
@@ -161,6 +166,14 @@ export function renderDashboard() {
         '<div class="alert alert-important">최근 내역을 불러오지 못했습니다.</div>';
     }
   };
+
+  // FAB 및 빈 상태 CTA 공통 핸들러: 거래 페이지로 이동하면서 모달 자동 오픈 플래그 설정
+  function goToAddTransaction() {
+    sessionStorage.setItem('open_tx_modal', '1');
+    window.location.hash = '#/transactions';
+  }
+
+  div.querySelector('#btn-fab-add').addEventListener('click', goToAddTransaction);
 
   loadDashboardData();
   bindLayoutEvents(div);
