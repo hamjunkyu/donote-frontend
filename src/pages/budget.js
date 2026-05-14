@@ -1,5 +1,5 @@
 import { api } from '../api.js';
-import { formatCurrency, getCurrentMonthStr } from '../utils/formatters.js';
+import { formatCurrency, getCurrentMonthStr, escapeHtml } from '../utils/formatters.js';
 import { createPageLayout, bindLayoutEvents } from '../utils/layout.js';
 import { renderCategoryWithIcon } from '../utils/category-icons.js';
 
@@ -57,18 +57,19 @@ export function renderBudget() {
   const cancelBtn = div.querySelector('#budget-cancel');
 
   const renderProgressBar = (used, total, status) => {
-    const percent = total > 0 ? Math.min(Math.round((used / total) * 100), 100) : 0;
+    const percent = total > 0 ? Math.round((used / total) * 100) : 0;
+    const barWidth = Math.min(percent, 100);
     let color = 'var(--color-primary)';
     if (status === 'WARNING') color = '#f59f00';
     if (status === 'EXCEEDED') color = 'var(--color-expense)';
-    
+
     return `
       <div class="flex-between mb-2">
         <span class="text-muted" style="font-size: 0.875rem;">${formatCurrency(used)} / ${formatCurrency(total)}</span>
         <span style="font-weight: 600; color: ${color};">${percent}%</span>
       </div>
       <div style="width: 100%; height: 8px; background: var(--color-border); border-radius: 4px; overflow: hidden;">
-        <div style="height: 100%; width: ${percent}%; background: ${color}; transition: width 0.5s ease;"></div>
+        <div style="height: 100%; width: ${barWidth}%; background: ${color}; transition: width 0.5s ease;"></div>
       </div>
     `;
   };
@@ -105,7 +106,7 @@ export function renderBudget() {
           card.className = 'card';
           card.innerHTML = `
             <div class="flex-between mb-2">
-              <span style="font-weight: 600;">${cat.category_name || '카테고리'}</span>
+              <span style="font-weight: 600;">${escapeHtml(cat.category_name || '카테고리')}</span>
               <button class="text-muted" style="font-size: 0.75rem; text-decoration: underline;" data-id="${cat.budget_id}">삭제</button>
             </div>
             ${renderProgressBar(cat.spent_amount, cat.budget_amount, cat.status)}

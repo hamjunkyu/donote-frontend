@@ -1,5 +1,5 @@
 import { api } from '../api.js';
-import { formatCurrency } from '../utils/formatters.js';
+import { formatCurrency, escapeHtml } from '../utils/formatters.js';
 import { createPageLayout, bindLayoutEvents } from '../utils/layout.js';
 
 export function renderGoals() {
@@ -150,7 +150,7 @@ export function renderGoals() {
         card.innerHTML = `
           <div class="flex-between mb-2">
             <div style="font-weight: 600; font-size: 1.1rem;">
-              ${g.name}
+              ${escapeHtml(g.name)}
               ${statusBadge(g.status)}
             </div>
             <div class="text-muted" style="font-size: 0.85rem;">
@@ -264,7 +264,7 @@ export function renderGoals() {
         const txItems = transactions.slice(0, 10).map(tx => `
           <div class="flex-between" style="padding: 0.5rem 0; border-bottom: 1px solid var(--color-border);">
             <div>
-              <div style="font-size: 0.9rem;">${tx.description || '내용 없음'}</div>
+              <div style="font-size: 0.9rem;">${escapeHtml(tx.description || '내용 없음')}</div>
               <div class="text-muted" style="font-size: 0.75rem;">${tx.transaction_date}</div>
             </div>
             <span style="font-weight: 600;">${formatCurrency(tx.amount)}</span>

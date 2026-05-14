@@ -1,5 +1,5 @@
 import { api } from '../api.js';
-import { formatCurrency, formatDate } from '../utils/formatters.js';
+import { formatCurrency, formatDate, escapeHtml } from '../utils/formatters.js';
 import { createPageLayout, bindLayoutEvents } from '../utils/layout.js';
 import { renderCategoryWithIcon } from '../utils/category-icons.js';
 
@@ -62,7 +62,13 @@ export function renderDashboard() {
       const summary = await api.get(`/api/statistics/monthly-report?month=${currentMonthStr}`);
       div.querySelector('#total-income').textContent = '+' + formatCurrency(summary.total_income);
       div.querySelector('#total-expense').textContent = '-' + formatCurrency(summary.total_expense);
-      div.querySelector('#total-balance').textContent = formatCurrency(summary.total_income - summary.total_expense);
+
+      const balance = summary.total_income - summary.total_expense;
+      const balanceEl = div.querySelector('#total-balance');
+      balanceEl.textContent = (balance < 0 ? '-' : '') + formatCurrency(Math.abs(balance));
+      balanceEl.style.color = balance < 0
+        ? 'var(--color-expense)'
+        : 'var(--color-primary)';
 
       // 2. 카테고리별 지출 데이터 (최대 3개)
       let expenses = [];
@@ -134,7 +140,7 @@ export function renderDashboard() {
               ${renderCategoryWithIcon(tx.category_name, tx.type)}
             </div>
             <div style="font-weight: 500; color: var(--color-text-primary);">
-              ${tx.description || '내용 없음'}
+              ${escapeHtml(tx.description || '내용 없음')}
             </div>
           </div>
           <div style="text-align: right; display: flex; align-items: center;">
@@ -148,6 +154,11 @@ export function renderDashboard() {
 
     } catch (err) {
       console.error(err);
+      div.querySelector('#current-month').textContent = '데이터를 불러오지 못했습니다';
+      div.querySelector('#expense-top3').innerHTML =
+        '<div class="text-center text-muted" style="padding: 1rem 0;">불러오기 실패</div>';
+      div.querySelector('#recent-transactions').innerHTML =
+        '<div class="alert alert-important">최근 내역을 불러오지 못했습니다.</div>';
     }
   };
 

@@ -1,5 +1,5 @@
 import { api } from '../api.js';
-import { formatCurrency, formatDate } from '../utils/formatters.js';
+import { formatCurrency, formatDate, escapeHtml } from '../utils/formatters.js';
 import { createPageLayout, bindLayoutEvents } from '../utils/layout.js';
 import { renderCategoryWithIcon } from '../utils/category-icons.js';
 
@@ -203,7 +203,7 @@ export function renderTransactions() {
             ${renderCategoryWithIcon(tx.category_name, tx.type)}
           </div>
           <div style="font-weight: 500; color: var(--color-text-primary);">
-            ${tx.description || '내용 없음'}
+            ${escapeHtml(tx.description || '내용 없음')}
           </div>
           <div class="text-muted" style="font-size: 0.75rem; margin-top: 2px;">
             ${tx.transaction_time ? tx.transaction_time.substring(0,5) : ''}

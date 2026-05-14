@@ -1,3 +1,5 @@
+import { escapeHtml } from './formatters.js';
+
 export const CATEGORY_ICONS = {
   '식비': '🍔',
   '교통': '🚗',
@@ -57,7 +59,7 @@ export function renderCategoryWithIcon(categoryName, type) {
         justify-content: center;
         font-size: 0.85rem;
       ">${icon}</span>
-      <span style="font-weight: 500;">${categoryName || '미분류'}</span>
+      <span style="font-weight: 500;">${escapeHtml(categoryName || '미분류')}</span>
     </span>
   `;
 }

@@ -1,4 +1,5 @@
 import { api } from '../api.js';
+import { escapeHtml } from '../utils/formatters.js';
 import { createPageLayout, bindLayoutEvents } from '../utils/layout.js';
 
 export function renderCategories() {
@@ -46,7 +47,6 @@ export function renderCategories() {
           </div>
         </form>
       </dialog>
-    </dialog>
   `;
 
   div.innerHTML = createPageLayout('categories', contentHtml);
@@ -79,7 +79,7 @@ export function renderCategories() {
           item.className = 'card flex-between';
           item.style.marginBottom = 'var(--spacing-sm)';
           item.innerHTML = `
-            <div style="font-weight: 600;">${c.name}</div>
+            <div style="font-weight: 600;">${escapeHtml(c.name)}</div>
             <div>${typeBadge(c.type)}</div>
           `;
           defaultContainer.appendChild(item);
@@ -96,10 +96,10 @@ export function renderCategories() {
           item.className = 'card flex-between';
           item.style.marginBottom = 'var(--spacing-sm)';
           item.innerHTML = `
-            <div style="font-weight: 600;">${c.name} ${typeBadge(c.type)}</div>
+            <div style="font-weight: 600;">${escapeHtml(c.name)} ${typeBadge(c.type)}</div>
             <div style="display: flex; gap: 0.75rem;">
-              <button class="text-primary btn-edit-cat" data-id="${c.id}" data-name="${c.name}" data-type="${c.type}" style="font-size: 0.85rem;">수정</button>
-              <button class="text-expense btn-delete-cat" data-id="${c.id}" data-name="${c.name}" style="font-size: 0.85rem;">삭제</button>
+              <button class="text-primary btn-edit-cat" data-id="${c.id}" data-name="${escapeHtml(c.name)}" data-type="${c.type}" style="font-size: 0.85rem;">수정</button>
+              <button class="text-expense btn-delete-cat" data-id="${c.id}" data-name="${escapeHtml(c.name)}" style="font-size: 0.85rem;">삭제</button>
             </div>
           `;
 

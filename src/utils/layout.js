@@ -53,14 +53,14 @@ export function createPageLayout(activeNav, contentHtml) {
       <!-- Main Content -->
       <main class="main-content">
         <!-- Mobile Header (Visible only on mobile) -->
-        <header class="mobile-header" style="display: flex; justify-content: space-between; align-items: center; padding-bottom: var(--spacing-md); margin-bottom: var(--spacing-md); border-bottom: 1px solid var(--color-border);">
-          <div style="font-weight: 800; font-size: 1.25rem; color: var(--color-primary);">💰 Donote</div>
-          <div style="display: flex; gap: 12px; align-items: center;">
-             <a href="#/notifications" style="font-size: 1.25rem; text-decoration: none;">🔔</a>
-             <button id="btn-logout-mobile" style="font-size: 0.8rem; color: var(--color-text-secondary); text-decoration: underline;">로그아웃</button>
+        <header class="mobile-header">
+          <div class="mobile-header-title">💰 Donote</div>
+          <div class="mobile-header-actions">
+             <a href="#/notifications" class="mobile-header-bell">🔔</a>
+             <button id="btn-logout-mobile" class="mobile-header-logout">로그아웃</button>
           </div>
         </header>
-        
+
         ${contentHtml}
       </main>
 
@@ -87,20 +87,4 @@ export function bindLayoutEvents(container) {
       });
     }
   });
-  
-  // 모바일 헤더는 데스크탑에서 숨김
-  const mobileHeader = container.querySelector('.mobile-header');
-  if (mobileHeader) {
-      if (window.innerWidth > 768) {
-          mobileHeader.style.display = 'none';
-      }
-      
-      window.addEventListener('resize', () => {
-         if (window.innerWidth > 768) {
-             mobileHeader.style.display = 'none';
-         } else {
-             mobileHeader.style.display = 'flex';
-         }
-      });
-  }
 }

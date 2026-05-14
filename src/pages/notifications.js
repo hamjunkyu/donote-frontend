@@ -1,4 +1,5 @@
 import { api } from '../api.js';
+import { escapeHtml } from '../utils/formatters.js';
 import { createPageLayout, bindLayoutEvents } from '../utils/layout.js';
 
 export function renderNotifications() {
@@ -11,7 +12,6 @@ export function renderNotifications() {
       <div id="notification-list">
         <div class="text-center text-muted mt-4">로딩 중...</div>
       </div>
-    </div>
   `;
 
   div.innerHTML = createPageLayout('notifications', contentHtml);
@@ -54,7 +54,7 @@ export function renderNotifications() {
             <span class="text-muted" style="font-size: 0.75rem;">${dateStr}</span>
           </div>
           <div class="mt-2" style="font-size: 0.9rem;">
-            ${noti.message}
+            ${escapeHtml(noti.message)}
           </div>
         `;
 

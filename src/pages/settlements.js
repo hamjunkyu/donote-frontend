@@ -1,5 +1,5 @@
 import { api } from '../api.js';
-import { formatCurrency } from '../utils/formatters.js';
+import { formatCurrency, escapeHtml } from '../utils/formatters.js';
 import { createPageLayout, bindLayoutEvents } from '../utils/layout.js';
 
 export function renderSettlements() {
@@ -50,7 +50,6 @@ export function renderSettlements() {
           </div>
         </form>
       </dialog>
-    </dialog>
   `;
 
   div.innerHTML = createPageLayout('settlements', contentHtml);
@@ -96,7 +95,7 @@ export function renderSettlements() {
           const isSettled = p.status === 'SETTLED';
           pListHtml += `
             <div class="flex-between" style="padding: 0.5rem 0; border-bottom: 1px solid var(--color-border);">
-              <span>${p.display_name}</span>
+              <span>${escapeHtml(p.display_name)}</span>
               <div style="display: flex; align-items: center; gap: 0.5rem;">
                 <span class="${isSettled ? 'text-income' : 'text-expense'}" style="font-weight: 600;">
                   ${formatCurrency(p.amount)}
