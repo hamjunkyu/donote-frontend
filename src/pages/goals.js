@@ -109,7 +109,7 @@ export function renderGoals() {
       const categories = await api.get('/api/categories/');
       categorySelect.innerHTML = '<option value="">-- 연동할 카테고리 선택 --</option>';
       categories
-        .filter(c => c.type === 'INCOME')
+        .filter(c => c.type === 'EXPENSE')
         .forEach(c => {
           const opt = document.createElement('option');
           opt.value = c.id;
