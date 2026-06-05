@@ -34,7 +34,7 @@ export function renderLogin() {
       btn.textContent = '로그인 중...';
       btn.disabled = true;
 
-      const res = await api.post('/auth/login', { email, password });
+      const res = await api.post('/api/auth/login', { email, password });
       
       // 토큰 저장
       if (res.access_token) {

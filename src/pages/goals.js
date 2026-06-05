@@ -1,4 +1,4 @@
-import { api } from '../api.js';
+import { api, unwrapList } from '../api.js';
 import { formatCurrency, escapeHtml } from '../utils/formatters.js';
 import { createPageLayout, bindLayoutEvents } from '../utils/layout.js';
 
@@ -124,7 +124,7 @@ export function renderGoals() {
   const loadGoals = async () => {
     try {
       const url = currentFilter ? `/api/goals/?status=${currentFilter}` : '/api/goals/';
-      const goals = await api.get(url);
+      const goals = unwrapList(await api.get(url));
       listContainer.innerHTML = '';
 
       if (goals.length === 0) {

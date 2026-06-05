@@ -1,4 +1,4 @@
-import { api } from '../api.js';
+import { api, unwrapList } from '../api.js';
 import { formatCurrency, formatDate, escapeHtml } from '../utils/formatters.js';
 import { createPageLayout, bindLayoutEvents } from '../utils/layout.js';
 import { renderCategoryWithIcon } from '../utils/category-icons.js';
@@ -105,8 +105,7 @@ export function renderDashboard() {
 
       // 3. 최근 거래 내역 (최대 10개, 날짜별 그룹핑)
       const txContainer = div.querySelector('#recent-transactions');
-      const allTx = await api.get('/transactions/');
-      const recentTx = allTx.slice(0, 10);
+      const recentTx = unwrapList(await api.get('/api/transactions/?limit=10'));
 
       if (recentTx.length === 0) {
         txContainer.innerHTML = `

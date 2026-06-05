@@ -1,4 +1,4 @@
-import { api } from '../api.js';
+import { api, unwrapList } from '../api.js';
 import { formatCurrency, formatDate, escapeHtml } from '../utils/formatters.js';
 import { createPageLayout, bindLayoutEvents } from '../utils/layout.js';
 import { renderCategoryWithIcon } from '../utils/category-icons.js';
@@ -228,7 +228,7 @@ export function renderTransactions() {
         e.preventDefault();
         e.stopPropagation();
         try {
-          await api.delete(`/transactions/${tx.id}`);
+          await api.delete(`/api/transactions/${tx.id}`);
           loadTransactions();
         } catch(err) {
           alert('삭제 실패: ' + err.message);
@@ -249,7 +249,7 @@ export function renderTransactions() {
   const loadTransactions = async () => {
     try {
       listContainer.innerHTML = '<div class="text-center text-muted mt-4">로딩 중...</div>';
-      currentTransactions = await api.get('/transactions/');
+      currentTransactions = unwrapList(await api.get('/api/transactions/?limit=100'));
       renderList();
     } catch (err) {
       listContainer.innerHTML = '<div class="alert alert-important">내역을 불러오지 못했습니다.</div>';
@@ -326,9 +326,9 @@ export function renderTransactions() {
 
     try {
       if (editId) {
-        await api.patch(`/transactions/${editId}`, payload);
+        await api.patch(`/api/transactions/${editId}`, payload);
       } else {
-        await api.post('/transactions/', payload);
+        await api.post('/api/transactions/', payload);
       }
       modal.close();
       loadTransactions();

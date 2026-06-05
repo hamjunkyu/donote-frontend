@@ -1,4 +1,4 @@
-import { api } from '../api.js';
+import { api, unwrapList } from '../api.js';
 import { formatCurrency, escapeHtml } from '../utils/formatters.js';
 import { createPageLayout, bindLayoutEvents } from '../utils/layout.js';
 
@@ -270,7 +270,7 @@ export function renderSettlements() {
 
   const loadTransactionsForDropdown = async () => {
     try {
-      allTransactions = await api.get('/transactions/');
+      allTransactions = unwrapList(await api.get('/api/transactions/?limit=100'));
       txSelect.innerHTML = '<option value="">-- 거래 내역 선택 --</option>';
       
       const expenses = allTransactions.filter(t => t.type === 'EXPENSE');

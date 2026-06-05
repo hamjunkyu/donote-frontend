@@ -70,7 +70,7 @@ export function renderSignup() {
       btn.textContent = '가입 중...';
       btn.disabled = true;
 
-      await api.post('/auth/signup', { 
+      await api.post('/api/auth/signup', {
         name, 
         email, 
         password, 
