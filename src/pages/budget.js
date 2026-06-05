@@ -1,7 +1,6 @@
 import { api } from '../api.js';
 import { formatCurrency, getCurrentMonthStr, escapeHtml } from '../utils/formatters.js';
 import { createPageLayout, bindLayoutEvents } from '../utils/layout.js';
-import { renderCategoryWithIcon } from '../utils/category-icons.js';
 
 export function renderBudget() {
   const div = document.createElement('div');
@@ -29,7 +28,7 @@ export function renderBudget() {
         <form id="budget-form">
           <div class="form-group">
             <label class="form-label">금액 (원)</label>
-            <input type="number" id="budget-amount" class="form-control" required min="0" placeholder="예산 금액 입력">
+            <input type="number" id="budget-amount" class="form-control" required min="1" step="1" placeholder="예산 금액 입력">
           </div>
           <div class="form-group mb-4">
             <label class="form-label">카테고리 (선택)</label>
@@ -74,64 +73,63 @@ export function renderBudget() {
     `;
   };
 
+  const attachDeleteHandler = (btn) => {
+    btn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      try {
+        await api.delete(`/api/budgets/${e.currentTarget.dataset.id}`);
+        loadBudgets();
+      } catch (err) {
+        alert(`예산 삭제 실패: ${err.message}`);
+      }
+    });
+  };
+
   const loadBudgets = async () => {
     try {
       const summary = await api.get(`/api/budgets/${monthStr}`);
-      
+      const budgets = summary.budgets || [];
+
+      const overall = budgets.find(b => b.category_id == null);
+      const categoryBudgets = budgets.filter(b => b.category_id != null);
+
       // 전체 예산
-      if (summary.overall && summary.overall.budget_amount > 0) {
+      if (overall) {
         overallContainer.innerHTML = `
           <div class="flex-between mb-4">
-            <h3 style="margin: 0;">총 예산 잔여: <span class="text-primary">${formatCurrency(summary.overall.budget_amount - summary.overall.spent_amount)}</span></h3>
-            <button class="text-muted" style="font-size: 0.75rem; text-decoration: underline;" data-id="${summary.overall.budget_id}" id="delete-overall">삭제</button>
+            <h3 style="margin: 0;">총 예산 잔여: <span class="text-primary">${formatCurrency(overall.remaining)}</span></h3>
+            <button class="text-muted" style="font-size: 0.75rem; text-decoration: underline;" data-id="${overall.budget_id}">삭제</button>
           </div>
-          ${renderProgressBar(summary.overall.spent_amount, summary.overall.budget_amount, summary.overall.status)}
+          ${renderProgressBar(overall.spent, overall.budget, overall.status)}
         `;
-        
-        overallContainer.querySelector('#delete-overall')?.addEventListener('click', async (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          await api.delete(`/api/budgets/${e.target.dataset.id}`);
-          loadBudgets();
-        });
+        attachDeleteHandler(overallContainer.querySelector('button'));
       } else {
         overallContainer.innerHTML = '<div class="text-center text-muted">설정된 전체 예산이 없습니다.</div>';
       }
 
       // 카테고리 예산
-      if (summary.categories && summary.categories.length > 0) {
+      if (categoryBudgets.length > 0) {
         categoriesContainer.innerHTML = '';
-        summary.categories.forEach(cat => {
+        categoryBudgets.forEach(cat => {
           const card = document.createElement('div');
           card.className = 'card';
           card.innerHTML = `
             <div class="flex-between mb-2">
-              <span style="font-weight: 600;">${escapeHtml(cat.category_name || '카테고리')}</span>
+              <span style="font-weight: 600;">${escapeHtml(cat.category || cat.label)}</span>
               <button class="text-muted" style="font-size: 0.75rem; text-decoration: underline;" data-id="${cat.budget_id}">삭제</button>
             </div>
-            ${renderProgressBar(cat.spent_amount, cat.budget_amount, cat.status)}
+            ${renderProgressBar(cat.spent, cat.budget, cat.status)}
           `;
-          
-          card.querySelector('button').addEventListener('click', async (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            await api.delete(`/api/budgets/${e.target.dataset.id}`);
-            loadBudgets();
-          });
-          
+          attachDeleteHandler(card.querySelector('button'));
           categoriesContainer.appendChild(card);
         });
       } else {
         categoriesContainer.innerHTML = '<div class="card text-center text-muted">설정된 카테고리 예산이 없습니다.</div>';
       }
     } catch (err) {
-      if (err.message.includes('404')) {
-        overallContainer.innerHTML = '<div class="text-center text-muted">설정된 전체 예산이 없습니다.</div>';
-        categoriesContainer.innerHTML = '<div class="card text-center text-muted">설정된 카테고리 예산이 없습니다.</div>';
-      } else {
-        overallContainer.innerHTML = '<div class="alert alert-important">예산 정보를 불러오지 못했습니다.</div>';
-        categoriesContainer.innerHTML = '';
-      }
+      overallContainer.innerHTML = '<div class="alert alert-important">예산 정보를 불러오지 못했습니다.</div>';
+      categoriesContainer.innerHTML = '';
     }
   };
 
@@ -139,12 +137,14 @@ export function renderBudget() {
     try {
       const categories = await api.get('/api/categories/');
       const select = div.querySelector('#budget-category');
-      categories.forEach(c => {
-        const opt = document.createElement('option');
-        opt.value = c.id;
-        opt.textContent = c.name;
-        select.appendChild(opt);
-      });
+      categories
+        .filter(c => c.type === 'EXPENSE')
+        .forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c.id;
+          opt.textContent = c.name;
+          select.appendChild(opt);
+        });
     } catch (err) {
       console.error('카테고리 로드 실패', err);
     }
@@ -163,7 +163,7 @@ export function renderBudget() {
   // 예산 추가
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const amount = parseFloat(document.getElementById('budget-amount').value);
+    const amount = parseInt(document.getElementById('budget-amount').value, 10);
     const categoryId = document.getElementById('budget-category').value;
     
     const payload = {
