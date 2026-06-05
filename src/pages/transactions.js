@@ -40,7 +40,7 @@ export function renderTransactions() {
 
         <div class="form-group mt-4">
           <label class="form-label">금액</label>
-          <input type="number" id="tx-amount" class="form-control" placeholder="예) 5000" min="1" required style="font-size: 1.25rem; font-weight: 600;" />
+          <input type="number" id="tx-amount" class="form-control" placeholder="예) 5000" min="1" step="1" required style="font-size: 1.25rem; font-weight: 600;" />
         </div>
         
         <div class="form-group">
@@ -191,6 +191,10 @@ export function renderTransactions() {
       const isIncome = tx.type === 'INCOME';
       dailyTotal += isIncome ? tx.amount : -tx.amount;
 
+      const hasSettledShare = !isIncome
+        && tx.actual_amount != null
+        && tx.actual_amount !== tx.amount;
+
       const card = document.createElement('div');
       card.className = 'card tx-card';
       card.style.borderLeft = `4px solid ${isIncome ? 'var(--color-income)' : 'var(--color-expense)'}`;
@@ -213,6 +217,10 @@ export function renderTransactions() {
           <div style="font-weight: 700; font-size: 1.1rem; margin-bottom: 4px; color: ${isIncome ? 'var(--color-income)' : 'var(--color-text-primary)'}">
             ${isIncome ? '+' : '-'}${formatCurrency(tx.amount)}
           </div>
+          ${hasSettledShare ? `
+          <div style="font-size: 0.75rem; font-weight: 600; color: var(--color-primary); margin-bottom: 4px;">
+            실부담 ${formatCurrency(tx.actual_amount)}
+          </div>` : ''}
           <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
             <button class="btn-edit" style="font-size: 0.75rem; color: var(--color-primary);">수정</button>
             <button class="btn-delete" style="font-size: 0.75rem; color: var(--color-text-secondary);">삭제</button>
@@ -313,7 +321,7 @@ export function renderTransactions() {
     const editId = div.querySelector('#tx-edit-id').value;
     const payload = {
       type: typeInput.value,
-      amount: parseFloat(div.querySelector('#tx-amount').value),
+      amount: parseInt(div.querySelector('#tx-amount').value, 10),
       category_id: div.querySelector('#tx-category').value,
       transaction_date: div.querySelector('#tx-date').value,
     };

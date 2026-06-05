@@ -132,6 +132,9 @@ export function renderDashboard() {
         }
 
         const isIncome = tx.type === 'INCOME';
+        const hasSettledShare = !isIncome
+          && tx.actual_amount != null
+          && tx.actual_amount !== tx.amount;
         const card = document.createElement('div');
         card.className = 'card tx-card';
         card.style.borderLeft = `4px solid ${isIncome ? 'var(--color-income)' : 'var(--color-expense)'}`;
@@ -147,10 +150,14 @@ export function renderDashboard() {
               ${escapeHtml(tx.description || '내용 없음')}
             </div>
           </div>
-          <div style="text-align: right; display: flex; align-items: center;">
+          <div style="text-align: right;">
             <span style="font-weight: 700; font-size: 1.05rem; color: ${isIncome ? 'var(--color-income)' : 'var(--color-text-primary)'}">
               ${isIncome ? '+' : '-'}${formatCurrency(tx.amount)}
             </span>
+            ${hasSettledShare ? `
+            <div style="font-size: 0.72rem; font-weight: 600; color: var(--color-primary);">
+              실부담 ${formatCurrency(tx.actual_amount)}
+            </div>` : ''}
           </div>
         `;
         txContainer.appendChild(card);
