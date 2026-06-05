@@ -476,7 +476,7 @@ export function renderSettlements() {
     }
   });
 
-  // ==== 정산 수정 모달 (분배 방식 변경 + 참여자별 금액 수정) ====
+  // 정산 수정 모달: 분배 방식 변경, 참여자별 금액 수정
   const editModal = div.querySelector('#edit-settlement-modal');
   const editForm = div.querySelector('#edit-settlement-form');
   const editSplitTypeSelect = div.querySelector('#edit-s-split-type');

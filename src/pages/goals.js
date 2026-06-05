@@ -13,9 +13,9 @@ export function renderGoals() {
     </div>
       <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; overflow-x: auto;">
         <button class="filter-tab active" data-status="">전체</button>
-        <button class="filter-tab" data-status="IN_PROGRESS">진행중</button>
-        <button class="filter-tab" data-status="ACHIEVED">달성</button>
+        <button class="filter-tab" data-status="ON_TRACK">순조로움</button>
         <button class="filter-tab" data-status="BEHIND">뒤처짐</button>
+        <button class="filter-tab" data-status="ACHIEVED">달성</button>
         <button class="filter-tab" data-status="EXPIRED">만료</button>
         <button class="filter-tab" data-status="CANCELLED">취소</button>
       </div>
@@ -123,6 +123,7 @@ export function renderGoals() {
 
   const loadGoals = async () => {
     try {
+      listContainer.innerHTML = '<div class="text-center text-muted mt-4">로딩 중...</div>';
       const url = currentFilter ? `/api/goals/?status=${currentFilter}` : '/api/goals/';
       const goals = unwrapList(await api.get(url));
       listContainer.innerHTML = '';
@@ -220,6 +221,7 @@ export function renderGoals() {
   async function openDetail(goalId) {
     const content = div.querySelector('#goal-detail-content');
     content.innerHTML = '<div class="text-center text-muted">로딩 중...</div>';
+    detailModal.dataset.goalId = goalId;
     detailModal.showModal();
 
     try {
@@ -228,6 +230,8 @@ export function renderGoals() {
         api.get(`/api/goals/${goalId}/forecast`).catch(() => null),
         api.get(`/api/goals/${goalId}/transactions`).catch(() => []),
       ]);
+      // 응답 대기 중 모달이 닫히거나 다른 목표로 전환됐으면 렌더링 생략
+      if (!detailModal.open || detailModal.dataset.goalId !== goalId) return;
       const transactions = unwrapList(txRes);
 
       let forecastHtml = '';
