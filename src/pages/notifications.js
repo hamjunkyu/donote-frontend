@@ -46,6 +46,7 @@ export function renderNotifications() {
         if (noti.type === 'BUDGET_EXCEEDED') title = '🚨 예산 100% 초과';
         else if (noti.type === 'BUDGET_WARNING') title = '⚠️ 예산 80% 도달';
         else if (noti.type === 'SETTLEMENT_REQUEST') title = '💸 정산 요청';
+        else if (noti.type === 'SETTLEMENT_COMPLETED') title = '✅ 정산 완료';
         else if (noti.type === 'GOAL_ACHIEVED') title = '🎉 목표 달성';
 
         card.innerHTML = `
