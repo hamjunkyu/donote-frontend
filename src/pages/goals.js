@@ -49,6 +49,7 @@ export function renderGoals() {
             <select id="g-category" class="form-control" required>
               <option value="">불러오는 중...</option>
             </select>
+            <div class="text-muted" style="font-size: 0.75rem; margin-top: 4px;">선택한 지출 카테고리에 쌓인 금액이 저축액으로 집계됩니다.</div>
           </div>
           
           <input type="hidden" id="g-edit-id" value="" />
@@ -66,7 +67,6 @@ export function renderGoals() {
         </div>
         <button type="button" class="btn btn-outline mt-4" id="detail-close" style="width: 100%;">닫기</button>
       </dialog>
-    </main>
   `;
 
   div.innerHTML = createPageLayout('goals', contentHtml);
@@ -109,7 +109,7 @@ export function renderGoals() {
       const categories = await api.get('/api/categories/');
       categorySelect.innerHTML = '<option value="">-- 연동할 카테고리 선택 --</option>';
       categories
-        .filter(c => c.type === 'INCOME')
+        .filter(c => c.type === 'EXPENSE')
         .forEach(c => {
           const opt = document.createElement('option');
           opt.value = c.id;
@@ -223,11 +223,12 @@ export function renderGoals() {
     detailModal.showModal();
 
     try {
-      const [progress, forecast, transactions] = await Promise.all([
+      const [progress, forecast, txRes] = await Promise.all([
         api.get(`/api/goals/${goalId}/progress`),
         api.get(`/api/goals/${goalId}/forecast`).catch(() => null),
         api.get(`/api/goals/${goalId}/transactions`).catch(() => []),
       ]);
+      const transactions = unwrapList(txRes);
 
       let forecastHtml = '';
       if (forecast) {
@@ -355,7 +356,7 @@ export function renderGoals() {
     const editId = div.querySelector('#g-edit-id').value;
     const payload = {
       name: div.querySelector('#g-name').value,
-      target_amount: parseFloat(div.querySelector('#g-amount').value),
+      target_amount: parseInt(div.querySelector('#g-amount').value, 10),
       category_id: categorySelect.value
     };
 
