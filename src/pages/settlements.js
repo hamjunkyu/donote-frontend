@@ -50,6 +50,39 @@ export function renderSettlements() {
           </div>
         </form>
       </dialog>
+
+      <!-- 정산 수정 모달: 분배 방식 변경 + 참여자별 금액 수정 통합 -->
+      <dialog id="edit-settlement-modal" style="border: none; border-radius: var(--radius-lg); padding: var(--spacing-lg); width: 90%; max-width: 450px; box-shadow: var(--shadow-lg);">
+        <h3 class="mb-4">정산 수정</h3>
+        <form id="edit-settlement-form">
+          <input type="hidden" id="edit-s-id" />
+          <input type="hidden" id="edit-s-total" />
+
+          <div class="form-group">
+            <label class="form-label">분배 방식</label>
+            <select id="edit-s-split-type" class="form-control" required>
+              <option value="EQUAL">N빵 (균등 분배)</option>
+              <option value="CUSTOM">직접 입력</option>
+            </select>
+          </div>
+
+          <div class="form-group" id="edit-participants-section" style="display: none;">
+            <label class="form-label">참여자별 금액</label>
+            <div id="edit-participant-list" style="max-height: 200px; overflow-y: auto; border: 1px solid var(--color-border); border-radius: 8px; padding: 0.5rem;">
+              <!-- 동적 생성 -->
+            </div>
+            <div class="flex-between mt-2" style="font-size: 0.85rem;">
+              <span class="text-muted">합계가 총금액과 일치해야 합니다</span>
+              <span><span id="edit-sum" style="font-weight: 700;">0원</span> / <span id="edit-total-label" class="text-muted">0원</span></span>
+            </div>
+          </div>
+
+          <div class="flex-between mt-4">
+            <button type="button" class="btn btn-outline" id="edit-s-cancel" style="width: 48%;">취소</button>
+            <button type="submit" class="btn btn-primary" id="edit-s-submit" style="width: 48%;">저장</button>
+          </div>
+        </form>
+      </dialog>
   `;
 
   div.innerHTML = createPageLayout('settlements', contentHtml);
@@ -76,18 +109,21 @@ export function renderSettlements() {
       }
 
       for (const s of settlements) {
-        // 참여자 목록 조회
-        let participants = [];
-        try {
-          participants = await api.get(`/api/settlements/${s.id}/participants`);
-        } catch (e) { console.error('참여자 로드 실패'); }
+        // 참여자 + 미수금 병렬 조회
+        const [participants, debts] = await Promise.all([
+          api.get(`/api/settlements/${s.id}/participants`).catch(() => []),
+          api.get(`/api/settlements/${s.id}/debts`).catch(() => []),
+        ]);
 
         const card = document.createElement('div');
         card.className = 'card mb-3';
-        
+
+        const isPending = s.status === 'PENDING';
+        const isCompleted = s.status === 'COMPLETED';
+
         let statusBadge = '';
-        if (s.status === 'PENDING') statusBadge = '<span style="background: #fcc419; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem;">진행중</span>';
-        else if (s.status === 'COMPLETED') statusBadge = '<span style="background: #40c057; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem;">완료됨</span>';
+        if (isPending) statusBadge = '<span style="background: #fcc419; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem;">진행중</span>';
+        else if (isCompleted) statusBadge = '<span style="background: #40c057; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem;">완료됨</span>';
         else statusBadge = '<span style="background: #fa5252; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem;">취소됨</span>';
 
         let pListHtml = '';
@@ -100,11 +136,58 @@ export function renderSettlements() {
                 <span class="${isSettled ? 'text-income' : 'text-expense'}" style="font-weight: 600;">
                   ${formatCurrency(p.amount)}
                 </span>
-                ${!isSettled && s.status === 'PENDING' ? `<button class="btn-settle" data-pid="${p.id}" style="background: var(--color-primary); color: white; border: none; padding: 0.2rem 0.5rem; border-radius: 4px; cursor: pointer; font-size: 0.7rem;">완료</button>` : ''}
+                ${!isSettled && isPending ? `<button class="btn-settle" data-pid="${p.id}" style="background: var(--color-primary); color: white; border: none; padding: 0.2rem 0.5rem; border-radius: 4px; cursor: pointer; font-size: 0.7rem;">완료</button>` : ''}
               </div>
             </div>
           `;
         });
+
+        // 미수금 박스: 정산 안 된 참여자만 노출
+        const settledNames = new Set(
+          participants.filter(p => p.status === 'SETTLED').map(p => p.display_name)
+        );
+        const outstandingDebts = debts.filter(d => !settledNames.has(d.from));
+
+        let debtsHtml = '';
+        // 취소된 정산에는 미수금 정보가 의미 없으므로 표시하지 않음
+        if (debts.length > 0 && (isPending || isCompleted)) {
+          if (outstandingDebts.length === 0) {
+            debtsHtml = `
+              <div style="margin-top: 0.75rem; background: var(--color-income-light); border-radius: 8px; padding: 0.6rem 0.75rem; color: var(--color-income); font-weight: 600; text-align: center; font-size: 0.9rem;">
+                ✅ 모든 미수금이 정산되었습니다
+              </div>
+            `;
+          } else {
+            const rowsHtml = outstandingDebts.map(d => `
+              <div class="flex-between" style="padding: 0.3rem 0; font-size: 0.9rem;">
+                <span><strong>${escapeHtml(d.from)}</strong> <span class="text-muted">→</span> ${escapeHtml(d.to)}</span>
+                <span class="text-expense" style="font-weight: 700;">${formatCurrency(d.amount)}</span>
+              </div>
+            `).join('');
+
+            debtsHtml = `
+              <div style="margin-top: 0.75rem; background: var(--color-expense-light); border-radius: 8px; padding: 0.6rem 0.75rem;">
+                <div style="font-weight: 700; font-size: 0.8rem; color: var(--color-expense); margin-bottom: 0.25rem;">💰 남은 미수금</div>
+                ${rowsHtml}
+              </div>
+            `;
+          }
+        }
+
+        // 상태별 액션 버튼 클러스터 (우측 상단)
+        let actionBtnsHtml = '';
+        if (isPending) {
+          actionBtnsHtml = `
+            <div style="display: flex; gap: 0.75rem; align-items: center;">
+              <button class="btn-edit-settlement text-primary" data-sid="${s.id}" style="font-size: 0.8rem;">수정</button>
+              <button class="btn-complete-all text-muted" data-sid="${s.id}" style="font-size: 0.8rem; text-decoration: underline;">전체완료</button>
+            </div>
+          `;
+        } else if (isCompleted) {
+          actionBtnsHtml = `
+            <button class="btn-revert text-primary" data-sid="${s.id}" style="font-size: 0.8rem;">되돌리기</button>
+          `;
+        }
 
         const settledCount = participants.filter(p => p.status === 'SETTLED').length;
         const totalCount = participants.length;
@@ -115,7 +198,7 @@ export function renderSettlements() {
               총 ${formatCurrency(s.total_amount)}
               ${statusBadge}
             </div>
-            ${s.status === 'PENDING' ? `<button class="text-muted btn-complete-all" data-sid="${s.id}" style="font-size: 0.8rem; text-decoration: underline;">전체완료</button>` : ''}
+            ${actionBtnsHtml}
           </div>
           <div class="flex-between mb-3 text-muted" style="font-size: 0.85rem;">
             <span>분배 방식: ${s.split_type === 'EQUAL' ? '균등 분배' : '직접 입력'}</span>
@@ -124,6 +207,7 @@ export function renderSettlements() {
           <div style="background: var(--color-background); border-radius: 8px; padding: 0.5rem;">
             ${pListHtml}
           </div>
+          ${debtsHtml}
         `;
 
         // 개별 완료 처리
@@ -147,6 +231,32 @@ export function renderSettlements() {
               loadSettlements();
             } catch (err) {
               alert(err.message || '아직 완료되지 않은 인원이 있습니다.');
+            }
+          });
+        }
+
+        // 수정 버튼 (PENDING)
+        const btnEdit = card.querySelector('.btn-edit-settlement');
+        if (btnEdit) {
+          btnEdit.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            openEditModal(s, participants);
+          });
+        }
+
+        // 되돌리기 버튼 (COMPLETED)
+        const btnRevert = card.querySelector('.btn-revert');
+        if (btnRevert) {
+          btnRevert.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!confirm('완료된 정산을 진행중 상태로 되돌릴까요?')) return;
+            try {
+              await api.patch(`/api/settlements/${e.target.dataset.sid}/revert`);
+              loadSettlements();
+            } catch (err) {
+              alert('되돌리기 실패: ' + err.message);
             }
           });
         }
@@ -271,6 +381,99 @@ export function renderSettlements() {
     } finally {
       btnSubmit.disabled = false;
       btnSubmit.textContent = '정산 생성';
+    }
+  });
+
+  // ==== 정산 수정 모달 (분배 방식 변경 + 참여자별 금액 수정) ====
+  const editModal = div.querySelector('#edit-settlement-modal');
+  const editForm = div.querySelector('#edit-settlement-form');
+  const editSplitTypeSelect = div.querySelector('#edit-s-split-type');
+  const editPartList = div.querySelector('#edit-participant-list');
+  const editPartSection = div.querySelector('#edit-participants-section');
+  const editSumEl = div.querySelector('#edit-sum');
+  const editTotalLabel = div.querySelector('#edit-total-label');
+
+  const updateEditSum = () => {
+    const total = parseFloat(div.querySelector('#edit-s-total').value) || 0;
+    const sum = Array.from(editPartList.querySelectorAll('.edit-p-amount'))
+      .reduce((acc, inp) => acc + (parseFloat(inp.value) || 0), 0);
+    editSumEl.textContent = formatCurrency(sum);
+    editSumEl.style.color = Math.abs(sum - total) < 0.01
+      ? 'var(--color-income)'
+      : 'var(--color-expense)';
+  };
+
+  const refreshEditPartSection = () => {
+    editPartSection.style.display = editSplitTypeSelect.value === 'CUSTOM' ? 'block' : 'none';
+  };
+
+  editSplitTypeSelect.addEventListener('change', refreshEditPartSection);
+
+  function openEditModal(settlement, participants) {
+    div.querySelector('#edit-s-id').value = settlement.id;
+    div.querySelector('#edit-s-total').value = settlement.total_amount;
+    editTotalLabel.textContent = formatCurrency(settlement.total_amount);
+
+    // 참여자 행 생성
+    editPartList.innerHTML = '';
+    participants.forEach(p => {
+      const row = document.createElement('div');
+      row.className = 'edit-p-row flex-between mb-2';
+      row.dataset.pid = p.id;
+      row.innerHTML = `
+        <span style="flex: 1; font-size: 0.9rem;">${escapeHtml(p.display_name)}</span>
+        <input type="number" class="form-control edit-p-amount" value="${p.amount}" min="0" step="any" style="width: 45%;">
+      `;
+      row.querySelector('.edit-p-amount').addEventListener('input', updateEditSum);
+      editPartList.appendChild(row);
+    });
+
+    editSplitTypeSelect.value = settlement.split_type;
+    refreshEditPartSection();
+    updateEditSum();
+    editModal.showModal();
+  }
+
+  div.querySelector('#edit-s-cancel').addEventListener('click', () => editModal.close());
+
+  editForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btnSubmit = div.querySelector('#edit-s-submit');
+    btnSubmit.disabled = true;
+
+    try {
+      const sid = div.querySelector('#edit-s-id').value;
+      const splitType = editSplitTypeSelect.value;
+      const totalAmount = parseFloat(div.querySelector('#edit-s-total').value);
+
+      if (splitType === 'CUSTOM') {
+        // 참여자별 금액으로 직접 수정 (edit_split 내부에서 split_type을 CUSTOM으로 자동 설정)
+        const rows = editPartList.querySelectorAll('.edit-p-row');
+        const splits = Array.from(rows).map(row => ({
+          participant_id: row.dataset.pid,
+          amount: parseFloat(row.querySelector('.edit-p-amount').value) || 0,
+        }));
+
+        const sum = splits.reduce((acc, s) => acc + s.amount, 0);
+        if (Math.abs(sum - totalAmount) > 0.01) {
+          alert(`참여자별 금액의 합이 총금액(${formatCurrency(totalAmount)})과 일치해야 합니다.`);
+          return;
+        }
+
+        await api.patch(`/api/settlements/${sid}/split/edit`, { splits });
+      } else {
+        // EQUAL: 균등 재분배 후 split_type을 EQUAL로 설정
+        // (split_equal은 amount만 재계산하고 split_type을 바꾸지 않으므로 추가 PATCH 필요)
+        await api.post(`/api/settlements/${sid}/split/equal`);
+        await api.patch(`/api/settlements/${sid}`, { split_type: 'EQUAL' });
+      }
+
+      editModal.close();
+      loadSettlements();
+    } catch (err) {
+      alert('수정 실패: ' + err.message);
+    } finally {
+      btnSubmit.disabled = false;
     }
   });
 
