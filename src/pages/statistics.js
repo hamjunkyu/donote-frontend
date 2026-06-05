@@ -48,10 +48,12 @@ export function renderStatistics() {
     try {
       // 1. 요약 데이터 로드
       const summaryRes = await api.get(`/api/statistics/summary?period=monthly&date_from=${dateFrom}&date_to=${dateTo}`);
-      if (summaryRes.data && summaryRes.data.length > 0) {
-        const currentSummary = summaryRes.data[0];
-        div.querySelector('#stat-total-income').textContent = formatCurrency(currentSummary.income);
-        div.querySelector('#stat-total-expense').textContent = formatCurrency(currentSummary.expense);
+      const rows = summaryRes.data || [];
+      if (rows.length > 0) {
+        const totalIncome = rows.reduce((acc, r) => acc + (r.income || 0), 0);
+        const totalExpense = rows.reduce((acc, r) => acc + (r.expense || 0), 0);
+        div.querySelector('#stat-total-income').textContent = formatCurrency(totalIncome);
+        div.querySelector('#stat-total-expense').textContent = formatCurrency(totalExpense);
         div.querySelector('#stats-summary').style.display = 'block';
       }
 
