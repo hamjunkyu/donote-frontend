@@ -146,6 +146,7 @@ export function renderGoals() {
           <div class="flex-between mt-2" style="gap: 0.5rem;">
             <button class="btn-goal-edit text-primary" style="font-size: 0.8rem;">✏️ 수정</button>
             ${g.status === 'IN_PROGRESS' ? '<button class="btn-goal-cancel text-muted" style="font-size: 0.8rem;">⏸ 취소</button>' : ''}
+            ${g.status === 'CANCELLED' ? '<button class="btn-goal-reactivate text-income" style="font-size: 0.8rem;">▶ 재개</button>' : ''}
             <button class="btn-goal-delete text-expense" style="font-size: 0.8rem;">🗑 삭제</button>
           </div>
         `;
@@ -168,6 +169,20 @@ export function renderGoals() {
               loadGoals();
             } catch (err) {
               alert('취소 실패: ' + err.message);
+            }
+          });
+        }
+
+        const reactivateBtn = card.querySelector('.btn-goal-reactivate');
+        if (reactivateBtn) {
+          reactivateBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            try {
+              await api.patch(`/api/goals/${g.id}/reactivate`);
+              loadGoals();
+            } catch (err) {
+              alert('재개 실패: ' + err.message);
             }
           });
         }
@@ -300,6 +315,12 @@ export function renderGoals() {
           </form>
         </div>` : ''}
 
+        ${progress.status === 'CANCELLED' ? `
+        <div class="card mt-4 text-center">
+          <div class="text-muted mb-4" style="font-size: 0.9rem;">취소된 목표입니다. 재개하면 적립 기록과 진행률이 그대로 복원됩니다.</div>
+          <button class="btn btn-primary" id="detail-reactivate" style="width: auto; padding: 0.5rem 1.25rem;">▶ 목표 재개</button>
+        </div>` : ''}
+
         ${forecastHtml}
 
         <div class="card mt-4">
@@ -307,6 +328,22 @@ export function renderGoals() {
           ${contribItems}
         </div>
       `;
+
+      // 상세 모달 내 재개 버튼
+      const detailReactivate = content.querySelector('#detail-reactivate');
+      if (detailReactivate) {
+        detailReactivate.addEventListener('click', async () => {
+          detailReactivate.disabled = true;
+          try {
+            await api.patch(`/api/goals/${goalId}/reactivate`);
+            openDetail(goalId);
+            loadGoals();
+          } catch (err) {
+            detailReactivate.disabled = false;
+            alert('재개 실패: ' + err.message);
+          }
+        });
+      }
 
       // 적립하기 제출
       const contribForm = content.querySelector('#contrib-form');
