@@ -25,22 +25,21 @@ export function renderCategories() {
         <div class="text-center text-muted">로딩 중...</div>
       </div>
 
-      <!-- 생성/수정 모달 -->
+      <!-- 생성 모달 -->
       <dialog id="cat-modal" style="border: none; border-radius: var(--radius-lg); padding: var(--spacing-lg); width: 90%; max-width: 400px; box-shadow: var(--shadow-lg);">
-        <h3 class="mb-4" id="cat-modal-title">카테고리 추가</h3>
+        <h3 class="mb-4">카테고리 추가</h3>
         <form id="cat-form">
           <div class="form-group">
             <label class="form-label">카테고리 이름</label>
             <input type="text" id="cat-name" class="form-control" placeholder="예) 교육비" required maxlength="50" />
           </div>
-          <div class="form-group mb-4" id="cat-type-group">
+          <div class="form-group mb-4">
             <label class="form-label">유형</label>
             <select id="cat-type" class="form-control" required>
               <option value="EXPENSE">지출</option>
               <option value="INCOME">수입</option>
             </select>
           </div>
-          <input type="hidden" id="cat-edit-id" value="" />
           <div class="flex-between">
             <button type="button" class="btn btn-outline" id="cat-cancel" style="width: 48%;">취소</button>
             <button type="submit" class="btn btn-primary" id="cat-submit" style="width: 48%;">추가</button>
@@ -68,22 +67,8 @@ export function renderCategories() {
 
     item.innerHTML = `
       <div style="font-weight: 600;">${escapeHtml(c.name)}</div>
-      <div style="display: flex; align-items: center; gap: 0.75rem;">
-        <button class="text-primary btn-edit-cat" data-id="${c.id}" data-name="${escapeHtml(c.name)}" data-type="${c.type}" style="font-size: 0.85rem;">수정</button>
-        <button class="text-expense btn-delete-cat" data-id="${c.id}" style="font-size: 0.85rem;">삭제</button>
-      </div>
+      <button class="text-expense btn-delete-cat" data-id="${c.id}" style="font-size: 0.85rem;">삭제</button>
     `;
-
-    item.querySelector('.btn-edit-cat').addEventListener('click', (e) => {
-      const btn = e.currentTarget;
-      div.querySelector('#cat-modal-title').textContent = '카테고리 수정';
-      div.querySelector('#cat-submit').textContent = '저장';
-      div.querySelector('#cat-edit-id').value = btn.dataset.id;
-      div.querySelector('#cat-name').value = btn.dataset.name;
-      div.querySelector('#cat-type').value = btn.dataset.type;
-      div.querySelector('#cat-type-group').style.display = 'none'; // 수정 시 유형 변경 불가
-      modal.showModal();
-    });
 
     item.querySelector('.btn-delete-cat').addEventListener('click', async (e) => {
       e.preventDefault();
@@ -134,10 +119,6 @@ export function renderCategories() {
 
   // 모달 제어
   addBtn.addEventListener('click', () => {
-    div.querySelector('#cat-modal-title').textContent = '카테고리 추가';
-    div.querySelector('#cat-submit').textContent = '추가';
-    div.querySelector('#cat-edit-id').value = '';
-    div.querySelector('#cat-type-group').style.display = 'block';
     form.reset();
     modal.showModal();
   });
@@ -148,26 +129,15 @@ export function renderCategories() {
     e.preventDefault();
     const btnSubmit = div.querySelector('#cat-submit');
     btnSubmit.disabled = true;
-
-    const editId = div.querySelector('#cat-edit-id').value;
-
     try {
-      if (editId) {
-        // 수정 (이름만)
-        await api.patch(`/api/categories/${editId}`, {
-          name: div.querySelector('#cat-name').value
-        });
-      } else {
-        // 생성
-        await api.post('/api/categories/', {
-          name: div.querySelector('#cat-name').value,
-          type: div.querySelector('#cat-type').value
-        });
-      }
+      await api.post('/api/categories/', {
+        name: div.querySelector('#cat-name').value,
+        type: div.querySelector('#cat-type').value,
+      });
       modal.close();
       loadCategories();
     } catch (err) {
-      alert((editId ? '수정' : '추가') + ' 실패: ' + err.message);
+      alert('추가 실패: ' + err.message);
     } finally {
       btnSubmit.disabled = false;
     }
