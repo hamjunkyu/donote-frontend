@@ -308,7 +308,7 @@ export function renderTransactions() {
 
   const loadTransactions = async () => {
     try {
-      listContainer.innerHTML = '<div class="text-center text-muted mt-4">로딩 중...</div>';
+      listContainer.innerHTML = Array.from({ length: 6 }, () => '<div class="skeleton skeleton-row"></div>').join('');
       const res = await api.get(`/api/transactions/?${buildQuery()}`);
       currentTransactions = res.items || [];
       total = res.total || 0;

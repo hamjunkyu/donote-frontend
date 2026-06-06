@@ -56,6 +56,20 @@ export function getCategoryIcon(categoryName, type) {
   return type === 'INCOME' ? '💰' : '💸';
 }
 
+// 카테고리 칩 배경 색상 팔레트 (이름 기반 결정적 배정으로 카테고리마다 일관된 색)
+const CHIP_COLORS = [
+  '#FFE3E3', '#FFF3BF', '#D3F9D8', '#D0EBFF', '#E5DBFF',
+  '#FFD8A8', '#C3FAE8', '#FFDEEB', '#D8F5A2', '#BAC8FF'
+];
+
+function chipColor(name) {
+  let hash = 0;
+  for (const ch of (name || '미분류')) {
+    hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
+  }
+  return CHIP_COLORS[hash % CHIP_COLORS.length];
+}
+
 /**
  * 카테고리명과 이모지를 포함한 HTML 요소를 렌더링합니다.
  * @param {string} categoryName - 카테고리 이름
@@ -65,17 +79,16 @@ export function getCategoryIcon(categoryName, type) {
 export function renderCategoryWithIcon(categoryName, type) {
   const icon = getCategoryIcon(categoryName, type);
   return `
-    <span style="display: inline-flex; align-items: center; gap: 0.3rem;">
+    <span style="display: inline-flex; align-items: center; gap: 0.4rem;">
       <span class="category-icon" style="
-        background: var(--color-background);
-        border: 1px solid var(--color-border);
+        background: ${chipColor(categoryName)};
         border-radius: 50%;
-        width: 24px;
-        height: 24px;
+        width: 26px;
+        height: 26px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-size: 0.85rem;
+        font-size: 0.9rem;
       ">${icon}</span>
       <span style="font-weight: 500;">${escapeHtml(categoryName || '미분류')}</span>
     </span>

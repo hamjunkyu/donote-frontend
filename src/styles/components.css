@@ -8,6 +8,11 @@
   box-shadow: var(--shadow-sm);
   margin-bottom: var(--spacing-md);
   border: 1px solid var(--color-border);
+  transition: box-shadow 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
 }
 
 .card-title {
@@ -104,6 +109,25 @@
 .form-control:focus {
   outline: none;
   border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-light);
+}
+
+/* Skeleton 로딩 */
+.skeleton {
+  background: linear-gradient(90deg, var(--color-background) 25%, #eef1f4 50%, var(--color-background) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.3s ease-in-out infinite;
+  border-radius: var(--radius-md);
+}
+
+.skeleton-row {
+  height: 56px;
+  margin-bottom: var(--spacing-sm);
+}
+
+@keyframes skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 /* Utilities */

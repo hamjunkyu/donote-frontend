@@ -228,6 +228,7 @@ export function renderDashboard() {
   // 4. 최근 거래
   const loadRecentTx = async () => {
     const txContainer = div.querySelector('#recent-transactions');
+    txContainer.innerHTML = Array.from({ length: 4 }, () => '<div class="skeleton skeleton-row"></div>').join('');
     try {
       const recentTx = unwrapList(await api.get('/api/transactions/?limit=10'));
 
