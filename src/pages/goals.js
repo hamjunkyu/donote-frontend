@@ -81,6 +81,7 @@ export function renderGoals() {
   const form = div.querySelector('#goal-form');
 
   let currentFilter = '';
+  let detailToken = 0; // 상세 모달 동시 로드 방지용 토큰 (최신 요청만 렌더)
 
   // 필터 탭
   div.querySelectorAll('.filter-tab').forEach(tab => {
@@ -95,7 +96,7 @@ export function renderGoals() {
   const loadGoals = async () => {
     try {
       listContainer.innerHTML = '<div class="text-center text-muted mt-4">로딩 중...</div>';
-      const url = currentFilter ? `/api/goals/?status=${currentFilter}` : '/api/goals/';
+      const url = currentFilter ? `/api/goals/?limit=100&status=${currentFilter}` : '/api/goals/?limit=100';
       const goals = unwrapList(await api.get(url));
       listContainer.innerHTML = '';
 
@@ -194,16 +195,18 @@ export function renderGoals() {
   async function openDetail(goalId) {
     const content = div.querySelector('#goal-detail-content');
     content.innerHTML = '<div class="text-center text-muted">로딩 중...</div>';
-    detailModal.dataset.goalId = goalId;
-    detailModal.showModal();
+    // 적립 추가/삭제 후 새로고침으로 재호출될 때는 이미 열려 있으므로 showModal 재호출 금지(이미 열린 dialog는 예외 발생)
+    if (!detailModal.open) detailModal.showModal();
+    const myToken = ++detailToken;
 
     try {
       const [progress, forecast, contribRes] = await Promise.all([
         api.get(`/api/goals/${goalId}/progress`),
         api.get(`/api/goals/${goalId}/forecast`).catch(() => null),
-        api.get(`/api/goals/${goalId}/contributions`).catch(() => []),
+        api.get(`/api/goals/${goalId}/contributions?limit=100`).catch(() => []),
       ]);
-      if (!detailModal.open || detailModal.dataset.goalId !== goalId) return;
+      // 응답 대기 중 모달이 닫히거나 다른(또는 같은) 목표로 재진입했으면 최신 요청만 렌더
+      if (myToken !== detailToken || !detailModal.open) return;
       const contributions = unwrapList(contribRes);
 
       const canContribute = progress.status !== 'ACHIEVED' && progress.status !== 'CANCELLED';
@@ -310,6 +313,8 @@ export function renderGoals() {
       if (contribForm) {
         contribForm.addEventListener('submit', async (e) => {
           e.preventDefault();
+          if (contribForm.dataset.submitting) return; // Enter 연타 등 중복 제출 방지
+          contribForm.dataset.submitting = '1';
           const btn = content.querySelector('#contrib-submit');
           btn.disabled = true;
           const amount = parseInt(content.querySelector('#contrib-amount').value, 10);
@@ -318,11 +323,12 @@ export function renderGoals() {
           if (memo) payload.memo = memo;
           try {
             await api.post(`/api/goals/${goalId}/contributions`, payload);
-            openDetail(goalId); // 상세 갱신
+            openDetail(goalId); // 상세 갱신 (성공 시 폼이 새로 렌더되어 플래그도 초기화됨)
             loadGoals();        // 목록 카드 진행률 갱신
           } catch (err) {
             alert('적립 실패: ' + err.message);
             btn.disabled = false;
+            delete contribForm.dataset.submitting;
           }
         });
       }
@@ -331,11 +337,13 @@ export function renderGoals() {
       content.querySelectorAll('.btn-contrib-delete').forEach(btn => {
         btn.addEventListener('click', async () => {
           if (!confirm('이 적립 기록을 삭제할까요?')) return;
+          btn.disabled = true;
           try {
             await api.delete(`/api/goals/${goalId}/contributions/${btn.dataset.cid}`);
             openDetail(goalId);
             loadGoals();
           } catch (err) {
+            btn.disabled = false;
             alert('삭제 실패: ' + err.message);
           }
         });

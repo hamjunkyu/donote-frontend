@@ -42,7 +42,7 @@ export function renderNotifications() {
   const loadNotifications = async () => {
     listContainer.innerHTML = skeletonRows(4);
     try {
-      const notifications = unwrapList(await api.get(`/api/notifications${unreadOnly ? '?unread=true' : ''}`));
+      const notifications = unwrapList(await api.get(`/api/notifications?limit=100${unreadOnly ? '&unread=true' : ''}`));
       listContainer.innerHTML = '';
 
       if (notifications.length === 0) {

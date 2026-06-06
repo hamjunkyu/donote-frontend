@@ -404,8 +404,6 @@ export function renderTransactions() {
     modal.showModal();
   };
 
-
-
   div.querySelector('#tx-cancel').addEventListener('click', () => modal.close());
 
   form.addEventListener('submit', async (e) => {
