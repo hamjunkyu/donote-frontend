@@ -1,4 +1,4 @@
-import { api } from '../api.js';
+import { api, downloadFile } from '../api.js';
 import { formatCurrency, formatDate, escapeHtml } from '../utils/formatters.js';
 import { createPageLayout, bindLayoutEvents } from '../utils/layout.js';
 import { renderCategoryWithIcon } from '../utils/category-icons.js';
@@ -10,7 +10,10 @@ export function renderTransactions() {
   const contentHtml = `
     <div class="flex-between mb-4">
       <h2 style="font-size: 1.5rem; margin: 0; font-weight: 700;">거래 내역</h2>
-      <button class="btn btn-primary" id="btn-add-tx" style="width: auto; padding: 0.45rem 1rem; font-size: 0.85rem; font-weight: 600;">+ 내역 추가</button>
+      <div style="display: flex; gap: var(--spacing-sm);">
+        <button class="btn btn-outline" id="btn-export" style="width: auto; padding: 0.45rem 0.9rem; font-size: 0.85rem;">내보내기</button>
+        <button class="btn btn-primary" id="btn-add-tx" style="width: auto; padding: 0.45rem 1rem; font-size: 0.85rem; font-weight: 600;">+ 내역 추가</button>
+      </div>
     </div>
 
     <div class="card tx-filters">
@@ -345,6 +348,19 @@ export function renderTransactions() {
     applyFilters();
   });
   
+  // CSV 내보내기
+  const exportBtn = div.querySelector('#btn-export');
+  exportBtn.addEventListener('click', async () => {
+    exportBtn.disabled = true;
+    try {
+      await downloadFile('/api/transactions/export', 'transactions.csv');
+    } catch (err) {
+      alert('내보내기 실패: ' + err.message);
+    } finally {
+      exportBtn.disabled = false;
+    }
+  });
+
   // 새 거래 내역 추가 버튼 연결
   const addBtn = div.querySelector('#btn-add-tx');
   addBtn.addEventListener('click', () => {

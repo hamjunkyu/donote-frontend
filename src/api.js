@@ -143,3 +143,24 @@ export function unwrapList(res) {
   if (res && Array.isArray(res.items)) return res.items;
   return [];
 }
+
+// 인증 헤더를 붙여 파일(예: CSV)을 내려받는다.
+export async function downloadFile(endpoint, filename) {
+  const token = localStorage.getItem('access_token');
+  const url = endpoint.startsWith('http') ? endpoint : `${BASE_URL}${endpoint}`;
+  const response = await fetch(url, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!response.ok) {
+    throw new Error('다운로드에 실패했습니다.');
+  }
+  const blob = await response.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = objectUrl;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(objectUrl);
+}
