@@ -422,8 +422,9 @@ export function renderTransactions() {
     const timeVal = div.querySelector('#tx-time').value;
     if (timeVal) payload.transaction_time = timeVal;
     
+    // 수정 시에는 빈 값('')도 보내 내용을 지울 수 있게 한다(백엔드는 null이면 미변경 처리).
     const descVal = div.querySelector('#tx-desc').value;
-    if (descVal) payload.description = descVal;
+    if (editId || descVal) payload.description = descVal;
 
     try {
       if (editId) {

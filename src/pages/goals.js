@@ -11,7 +11,7 @@ const STATUS_BADGE = {
 
 function statusBadge(status) {
   const s = STATUS_BADGE[status] || { bg: '#868e96', label: status };
-  return `<span style="background: ${s.bg}; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">${s.label}</span>`;
+  return `<span style="background: ${s.bg}; color: #fff; padding: 3px 9px; border-radius: 4px; font-size: 0.8rem; font-weight: 600;">${s.label}</span>`;
 }
 
 export function renderGoals() {
@@ -124,21 +124,21 @@ export function renderGoals() {
         let paceHint = '';
         if (g.status === 'IN_PROGRESS' && g.on_track != null) {
           paceHint = g.on_track
-            ? '<span class="text-income" style="font-size: 0.75rem; margin-left: 0.5rem;">순조</span>'
-            : '<span class="text-expense" style="font-size: 0.75rem; margin-left: 0.5rem;">지연</span>';
+            ? '<span class="text-income" style="font-size: 0.8rem;">순조</span>'
+            : '<span class="text-expense" style="font-size: 0.8rem;">지연</span>';
         }
 
         card.innerHTML = `
           <div class="flex-between mb-2">
-            <div style="font-weight: 600; font-size: 1.1rem;">
+            <div style="display: flex; align-items: center; gap: 0.5rem; font-weight: 600; font-size: 1.2rem;">
               ${escapeHtml(g.name)}
               ${statusBadge(g.status)}${paceHint}
             </div>
-            <div class="text-muted" style="font-size: 0.85rem;">${percent}%</div>
+            <div class="text-muted" style="font-size: 0.9rem;">${percent}%</div>
           </div>
-          <div style="margin-bottom: 0.5rem; color: var(--color-text-secondary); font-size: 0.9rem;">
+          <div style="margin-bottom: 0.5rem; color: var(--color-text-secondary); font-size: 0.95rem;">
             <span style="font-weight: 600; color: var(--color-text-primary);">${formatCurrency(currentAmount)}</span> / ${formatCurrency(targetAmount)}
-            <span class="text-muted" style="margin-left: 0.5rem; font-size: 0.8rem;">남은 금액: ${formatCurrency(remaining)}</span>
+            <span class="text-muted" style="margin-left: 0.5rem; font-size: 0.85rem;">남은 금액: ${formatCurrency(remaining)}</span>
           </div>
           <div style="width: 100%; height: 10px; background: #e9ecef; border-radius: 5px; overflow: hidden;">
             <div style="width: ${percent}%; height: 100%; background: ${barColor}; transition: width 0.5s ease;"></div>

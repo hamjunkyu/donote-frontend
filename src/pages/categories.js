@@ -13,15 +13,15 @@ export function renderCategories() {
 
       <!-- 기본 카테고리 -->
       <h3 class="mb-2" style="font-size: 1rem;">📌 시스템 기본 카테고리</h3>
-      <div id="default-categories" class="mb-4">
+      <div id="default-categories" class="cat-grid mb-4">
         <div class="text-center text-muted">로딩 중...</div>
       </div>
 
       <!-- 사용자 카테고리 -->
-      <div class="flex-between mb-2">
+      <div class="flex-between mb-2" style="border-top: 1px solid var(--color-border); padding-top: var(--spacing-lg); margin-top: var(--spacing-md);">
         <h3 style="font-size: 1rem;">✏️ 내 카테고리</h3>
       </div>
-      <div id="user-categories" class="mb-4">
+      <div id="user-categories" class="cat-grid mb-4">
         <div class="text-center text-muted">로딩 중...</div>
       </div>
 
@@ -57,88 +57,77 @@ export function renderCategories() {
   const form = div.querySelector('#cat-form');
   const addBtn = div.querySelector('#btn-add-cat');
 
-  function typeBadge(type) {
-    if (type === 'EXPENSE') {
-      return '<span style="background: var(--color-expense-light); color: var(--color-expense); padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">지출</span>';
+  const renderCategoryItem = (c, isCustom) => {
+    const item = document.createElement('div');
+    item.className = 'card flex-between';
+
+    if (!isCustom) {
+      item.innerHTML = `<div style="font-weight: 600;">${escapeHtml(c.name)}</div>`;
+      return item;
     }
-    return '<span style="background: var(--color-income-light); color: var(--color-income); padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">수입</span>';
-  }
+
+    item.innerHTML = `
+      <div style="font-weight: 600;">${escapeHtml(c.name)}</div>
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <button class="text-primary btn-edit-cat" data-id="${c.id}" data-name="${escapeHtml(c.name)}" data-type="${c.type}" style="font-size: 0.85rem;">수정</button>
+        <button class="text-expense btn-delete-cat" data-id="${c.id}" style="font-size: 0.85rem;">삭제</button>
+      </div>
+    `;
+
+    item.querySelector('.btn-edit-cat').addEventListener('click', (e) => {
+      const btn = e.currentTarget;
+      div.querySelector('#cat-modal-title').textContent = '카테고리 수정';
+      div.querySelector('#cat-submit').textContent = '저장';
+      div.querySelector('#cat-edit-id').value = btn.dataset.id;
+      div.querySelector('#cat-name').value = btn.dataset.name;
+      div.querySelector('#cat-type').value = btn.dataset.type;
+      div.querySelector('#cat-type-group').style.display = 'none'; // 수정 시 유형 변경 불가
+      modal.showModal();
+    });
+
+    item.querySelector('.btn-delete-cat').addEventListener('click', async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      try {
+        await api.delete(`/api/categories/${e.currentTarget.dataset.id}`);
+        loadCategories();
+      } catch (err) {
+        if (err.message.includes('사용 중')) {
+          alert('거래에서 사용 중인 카테고리는 삭제할 수 없습니다.');
+        } else {
+          alert('삭제 실패: ' + err.message);
+        }
+      }
+    });
+
+    return item;
+  };
+
+  // 한 섹션을 지출/수입 소그룹으로 나눠 렌더링
+  const renderCategorySection = (container, list, isCustom, emptyMsg) => {
+    if (list.length === 0) {
+      container.innerHTML = `<div class="card text-center text-muted" style="grid-column: 1 / -1;">${emptyMsg}</div>`;
+      return;
+    }
+    container.innerHTML = '';
+    [{ type: 'EXPENSE', label: '지출' }, { type: 'INCOME', label: '수입' }].forEach(group => {
+      const items = list.filter(c => c.type === group.type);
+      if (items.length === 0) return;
+      const sub = document.createElement('div');
+      sub.className = `cat-subhead ${group.type === 'EXPENSE' ? 'expense' : 'income'}`;
+      sub.textContent = group.label;
+      container.appendChild(sub);
+      items.forEach(c => container.appendChild(renderCategoryItem(c, isCustom)));
+    });
+  };
 
   const loadCategories = async () => {
     try {
       const categories = await api.get('/api/categories/');
-      
-      const defaults = categories.filter(c => !c.user_id);
-      const customs = categories.filter(c => c.user_id);
-
-      // 기본 카테고리 렌더링
-      if (defaults.length > 0) {
-        defaultContainer.innerHTML = '';
-        defaults.forEach(c => {
-          const item = document.createElement('div');
-          item.className = 'card flex-between';
-          item.style.marginBottom = 'var(--spacing-sm)';
-          item.innerHTML = `
-            <div style="font-weight: 600;">${escapeHtml(c.name)}</div>
-            <div>${typeBadge(c.type)}</div>
-          `;
-          defaultContainer.appendChild(item);
-        });
-      } else {
-        defaultContainer.innerHTML = '<div class="card text-center text-muted">기본 카테고리가 없습니다.</div>';
-      }
-
-      // 사용자 카테고리 렌더링
-      if (customs.length > 0) {
-        userContainer.innerHTML = '';
-        customs.forEach(c => {
-          const item = document.createElement('div');
-          item.className = 'card flex-between';
-          item.style.marginBottom = 'var(--spacing-sm)';
-          item.innerHTML = `
-            <div style="font-weight: 600;">${escapeHtml(c.name)} ${typeBadge(c.type)}</div>
-            <div style="display: flex; gap: 0.75rem;">
-              <button class="text-primary btn-edit-cat" data-id="${c.id}" data-name="${escapeHtml(c.name)}" data-type="${c.type}" style="font-size: 0.85rem;">수정</button>
-              <button class="text-expense btn-delete-cat" data-id="${c.id}" data-name="${escapeHtml(c.name)}" style="font-size: 0.85rem;">삭제</button>
-            </div>
-          `;
-
-          // 수정 버튼
-          item.querySelector('.btn-edit-cat').addEventListener('click', (e) => {
-            const btn = e.currentTarget;
-            div.querySelector('#cat-modal-title').textContent = '카테고리 수정';
-            div.querySelector('#cat-submit').textContent = '저장';
-            div.querySelector('#cat-edit-id').value = btn.dataset.id;
-            div.querySelector('#cat-name').value = btn.dataset.name;
-            div.querySelector('#cat-type').value = btn.dataset.type;
-            div.querySelector('#cat-type-group').style.display = 'none'; // 수정시 유형 변경 불가
-            modal.showModal();
-          });
-
-          // 삭제 버튼
-          item.querySelector('.btn-delete-cat').addEventListener('click', async (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            const btn = e.currentTarget;
-            try {
-              await api.delete(`/api/categories/${btn.dataset.id}`);
-              loadCategories();
-            } catch (err) {
-              if (err.message.includes('사용 중')) {
-                alert('거래에서 사용 중인 카테고리는 삭제할 수 없습니다.');
-              } else {
-                alert('삭제 실패: ' + err.message);
-              }
-            }
-          });
-
-          userContainer.appendChild(item);
-        });
-      } else {
-        userContainer.innerHTML = '<div class="card text-center text-muted">사용자 정의 카테고리가 없습니다.</div>';
-      }
+      renderCategorySection(defaultContainer, categories.filter(c => !c.user_id), false, '기본 카테고리가 없습니다.');
+      renderCategorySection(userContainer, categories.filter(c => c.user_id), true, '사용자 정의 카테고리가 없습니다.');
     } catch (err) {
-      defaultContainer.innerHTML = '<div class="alert alert-important">카테고리를 불러오지 못했습니다.</div>';
+      defaultContainer.innerHTML = '<div class="alert alert-important" style="grid-column: 1 / -1;">카테고리를 불러오지 못했습니다.</div>';
       userContainer.innerHTML = '';
     }
   };
