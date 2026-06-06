@@ -140,8 +140,14 @@ export function bindLayoutEvents(container) {
   const quickAdd = container.querySelector('#btn-quick-add');
   if (quickAdd) {
     quickAdd.addEventListener('click', () => {
-      sessionStorage.setItem('open_tx_modal', '1');
-      window.location.hash = '#/transactions';
+      const addBtn = container.querySelector('#btn-add-tx');
+      if (addBtn) {
+        // 이미 거래 페이지면 hash가 안 바뀌어 재렌더가 없으므로 추가 버튼을 직접 클릭
+        addBtn.click();
+      } else {
+        sessionStorage.setItem('open_tx_modal', '1');
+        window.location.hash = '#/transactions';
+      }
     });
   }
 

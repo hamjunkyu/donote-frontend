@@ -3,6 +3,7 @@ import { formatCurrency, formatDate, escapeHtml } from '../utils/formatters.js';
 import { createPageLayout, bindLayoutEvents } from '../utils/layout.js';
 import { renderCategoryWithIcon } from '../utils/category-icons.js';
 import { getSelectedMonth, formatMonthLabel } from '../utils/period.js';
+import { miniBar, skeletonRows } from '../utils/ui.js';
 
 export function renderDashboard() {
   const div = document.createElement('div');
@@ -80,12 +81,6 @@ export function renderDashboard() {
     sessionStorage.setItem('open_tx_modal', '1');
     window.location.hash = '#/transactions';
   }
-
-  const miniBar = (percent, color) => `
-    <div style="width: 100%; height: 6px; background: var(--color-background); border-radius: 3px; overflow: hidden;">
-      <div style="width: ${Math.min(percent, 100)}%; height: 100%; background: ${color};"></div>
-    </div>
-  `;
 
   // 1. 월 요약 + 전월대비 + 지출 TOP 3
   const loadSummary = async () => {
@@ -228,7 +223,7 @@ export function renderDashboard() {
   // 4. 최근 거래
   const loadRecentTx = async () => {
     const txContainer = div.querySelector('#recent-transactions');
-    txContainer.innerHTML = Array.from({ length: 4 }, () => '<div class="skeleton skeleton-row"></div>').join('');
+    txContainer.innerHTML = skeletonRows(4);
     try {
       const recentTx = unwrapList(await api.get('/api/transactions/?limit=10'));
 

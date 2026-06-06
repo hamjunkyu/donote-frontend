@@ -2,6 +2,7 @@ import { api } from '../api.js';
 import { formatCurrency, escapeHtml } from '../utils/formatters.js';
 import { createPageLayout, bindLayoutEvents } from '../utils/layout.js';
 import { getSelectedMonth, formatMonthLabel } from '../utils/period.js';
+import { miniBar } from '../utils/ui.js';
 
 const PALETTE = [
   '#FA5252', '#FD7E14', '#FCC419', '#40C057', '#12B886',
@@ -65,12 +66,6 @@ export function renderStatistics() {
 
   let trendChart = null;
   let categoryChart = null;
-
-  const miniBar = (percent, color) => `
-    <div style="width: 100%; height: 6px; background: var(--color-background); border-radius: 3px; overflow: hidden; margin-top: 4px;">
-      <div style="width: ${Math.min(percent, 100)}%; height: 100%; background: ${color};"></div>
-    </div>
-  `;
 
   // 1. 요약 카드 (월간 리포트)
   const loadSummaryCards = async () => {

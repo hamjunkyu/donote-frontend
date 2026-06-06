@@ -2,6 +2,7 @@ import { api } from '../api.js';
 import { formatCurrency, formatDate, escapeHtml } from '../utils/formatters.js';
 import { createPageLayout, bindLayoutEvents } from '../utils/layout.js';
 import { renderCategoryWithIcon } from '../utils/category-icons.js';
+import { skeletonRows } from '../utils/ui.js';
 
 export function renderTransactions() {
   const div = document.createElement('div');
@@ -161,7 +162,7 @@ export function renderTransactions() {
     let dailyTotal = 0;
     let currentGroupContainer = null;
 
-    // 날짜별 요약 생성을 위한 임시 함수
+    // 날짜별 그룹 헤더 생성
     const createDateHeader = (dateStr) => {
       const wrap = document.createElement('div');
       wrap.style.marginBottom = '1.5rem';
@@ -308,10 +309,17 @@ export function renderTransactions() {
 
   const loadTransactions = async () => {
     try {
-      listContainer.innerHTML = Array.from({ length: 6 }, () => '<div class="skeleton skeleton-row"></div>').join('');
+      listContainer.innerHTML = skeletonRows(6);
       const res = await api.get(`/api/transactions/?${buildQuery()}`);
       currentTransactions = res.items || [];
       total = res.total || 0;
+
+      // 현재 페이지가 비었는데 이전 페이지가 있으면(삭제 등) 첫 페이지로 보정 후 재조회
+      if (currentTransactions.length === 0 && offset > 0 && total > 0) {
+        offset = 0;
+        return loadTransactions();
+      }
+
       renderList();
       renderPagination();
     } catch (err) {
@@ -410,7 +418,7 @@ export function renderTransactions() {
         await api.post('/api/transactions/', payload);
       }
       modal.close();
-      if (editId) loadTransactions(); else applyFilters();
+      applyFilters();
     } catch (err) {
       alert((editId ? '수정' : '추가') + ' 실패: ' + err.message);
     } finally {

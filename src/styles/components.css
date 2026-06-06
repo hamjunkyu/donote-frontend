@@ -563,7 +563,7 @@ dialog {
   align-items: center;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 900px) {
   .stats-cat-layout {
     grid-template-columns: 1fr;
   }
@@ -643,6 +643,11 @@ dialog {
 
 .tx-card:last-child {
   border-bottom: none;
+}
+
+/* 리스트 행은 .card:hover 그림자 강조를 적용하지 않음 */
+.tx-card:hover {
+  box-shadow: var(--shadow-sm);
 }
 
 .tx-icon-wrap {
