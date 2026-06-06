@@ -166,8 +166,7 @@
   display: none;
   justify-content: space-between;
   align-items: center;
-  padding-bottom: var(--spacing-md);
-  margin-bottom: var(--spacing-md);
+  padding: var(--spacing-md);
   border-bottom: 1px solid var(--color-border);
 }
 
@@ -255,9 +254,106 @@
 /* Main Content Area */
 .main-content {
   flex: 1;
+  min-width: 0;
   margin-left: var(--sidebar-width);
+}
+
+/* 콘텐츠를 사이드바 우측 영역의 가운데로, 넉넉한 폭으로 정렬 */
+.content-area {
+  max-width: 1200px;
+  margin-inline: auto;
   padding: var(--spacing-xl);
-  max-width: 800px; /* Limit content width */
+}
+
+/* 모달 중앙 정렬: reset의 * { margin: 0 } 이 dialog 기본 margin: auto 를 덮어 좌상단에 붙는 문제 복원 */
+dialog {
+  margin: auto;
+}
+
+/* Desktop Header */
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background-color: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.app-header-inner {
+  max-width: 1200px;
+  margin-inline: auto;
+  padding: var(--spacing-md) var(--spacing-xl);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.app-header-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.app-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.app-header-add {
+  width: auto;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.85rem;
+}
+
+.app-header-bell {
+  position: relative;
+  font-size: 1.35rem;
+  text-decoration: none;
+  line-height: 1;
+}
+
+.app-header-bell .unread-count {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+}
+
+.app-header-user {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+}
+
+/* 안 읽은 알림 뱃지 (헤더 벨, 사이드바, 모바일 공통) */
+.unread-count {
+  display: none;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background: var(--color-expense);
+  color: #fff;
+  border-radius: 9px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.sidebar-link .unread-count {
+  margin-left: auto;
+}
+
+.mobile-header-bell {
+  position: relative;
+}
+
+.mobile-header-bell .unread-count {
+  position: absolute;
+  top: -6px;
+  right: -8px;
 }
 
 /* Bottom Navigation (Mobile) */
@@ -312,8 +408,15 @@
     display: none; /* Hide sidebar on mobile */
   }
 
+  .app-header {
+    display: none; /* Desktop header hidden on mobile */
+  }
+
   .main-content {
     margin-left: 0;
+  }
+
+  .content-area {
     padding: var(--spacing-lg) var(--spacing-md);
     padding-bottom: calc(var(--bottom-nav-height) + var(--spacing-xl) + env(safe-area-inset-bottom));
   }

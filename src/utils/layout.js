@@ -1,3 +1,8 @@
+import { api } from '../api.js';
+
+// 로그인 사용자 정보 캐시 (SPA 세션 동안 /api/auth/me 1회만 호출)
+let cachedUser = null;
+
 export function createPageLayout(activeNav, contentHtml) {
   const navItems = [
     { id: 'dashboard', href: '#/', icon: '📊', label: '홈' },
@@ -20,10 +25,13 @@ export function createPageLayout(activeNav, contentHtml) {
     { id: 'goals', href: '#/goals', icon: '🏆', label: '목표' }
   ];
 
+  const currentTitle = (navItems.find(i => i.id === activeNav) || {}).label || 'Donote';
+
   const sidebarLinksHtml = navItems.map(item => `
     <a href="${item.href}" class="sidebar-link ${activeNav === item.id ? 'active' : ''}">
       <span class="nav-icon">${item.icon}</span>
       <span class="nav-label">${item.label}</span>
+      ${item.id === 'notifications' ? '<span class="unread-count"></span>' : ''}
     </a>
   `).join('');
 
@@ -53,16 +61,30 @@ export function createPageLayout(activeNav, contentHtml) {
 
       <!-- Main Content -->
       <main class="main-content">
+        <!-- Desktop Header -->
+        <header class="app-header">
+          <div class="app-header-inner">
+            <div class="app-header-title">${currentTitle}</div>
+            <div class="app-header-actions">
+              <button id="btn-quick-add" class="btn btn-primary app-header-add">+ 거래 추가</button>
+              <a href="#/notifications" class="app-header-bell" aria-label="알림">🔔<span class="unread-count"></span></a>
+              <span id="header-username" class="app-header-user"></span>
+            </div>
+          </div>
+        </header>
+
         <!-- Mobile Header (Visible only on mobile) -->
         <header class="mobile-header">
           <div class="mobile-header-title">💰 Donote</div>
           <div class="mobile-header-actions">
-             <a href="#/notifications" class="mobile-header-bell">🔔</a>
+             <a href="#/notifications" class="mobile-header-bell" aria-label="알림">🔔<span class="unread-count"></span></a>
              <button id="btn-logout-mobile" class="mobile-header-logout">로그아웃</button>
           </div>
         </header>
 
-        ${contentHtml}
+        <div class="content-area">
+          ${contentHtml}
+        </div>
       </main>
 
       <!-- Mobile Bottom Nav -->
@@ -78,14 +100,33 @@ export function createPageLayout(activeNav, contentHtml) {
 export function bindLayoutEvents(container) {
   const logoutBtns = container.querySelectorAll('#btn-logout, #btn-logout-mobile');
   logoutBtns.forEach(btn => {
-    if (btn) {
-      btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        window.location.hash = '#/login';
-      });
-    }
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      window.location.hash = '#/login';
+    });
   });
+
+  // 헤더 사용자 이름
+  const userEl = container.querySelector('#header-username');
+  if (userEl) {
+    if (cachedUser) {
+      userEl.textContent = cachedUser.name;
+    } else {
+      api.get('/api/auth/me')
+        .then(u => { cachedUser = u; userEl.textContent = u.name; })
+        .catch(() => {});
+    }
+  }
+
+  // 빠른 거래 추가: 거래 페이지로 이동하며 추가 모달 자동 오픈
+  const quickAdd = container.querySelector('#btn-quick-add');
+  if (quickAdd) {
+    quickAdd.addEventListener('click', () => {
+      sessionStorage.setItem('open_tx_modal', '1');
+      window.location.hash = '#/transactions';
+    });
+  }
 }

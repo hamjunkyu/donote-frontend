@@ -37,12 +37,14 @@ export async function updateNotificationBadge() {
   try {
     const notifications = await api.get('/api/notifications');
     const unreadCount = notifications.filter(n => !n.is_read).length;
-    
-    document.querySelectorAll('a[href="#/notifications"]').forEach(el => {
+    const label = unreadCount > 99 ? '99+' : String(unreadCount);
+
+    document.querySelectorAll('.unread-count').forEach(el => {
       if (unreadCount > 0) {
-        el.innerHTML = `알림 <span class="notification-badge" style="background: #fa5252; color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.7rem; margin-left: 4px; animation: pulse 1.5s infinite; font-weight: bold; display: inline-block;">${unreadCount}</span>`;
+        el.textContent = label;
+        el.style.display = 'inline-flex';
       } else {
-        el.innerHTML = `알림`;
+        el.style.display = 'none';
       }
     });
   } catch (e) {
