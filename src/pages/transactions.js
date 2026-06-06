@@ -378,8 +378,8 @@ export function renderTransactions() {
     const now = getNowStr();
     div.querySelector('#tx-date').value = now.date;
     div.querySelector('#tx-time').value = now.time;
-    
-    modal.showModal();
+
+    if (!modal.open) modal.showModal();
   });
 
   // 모달 제어
@@ -400,8 +400,8 @@ export function renderTransactions() {
     div.querySelector('#tx-time').value = tx.transaction_time || '';
     div.querySelector('#tx-category').value = tx.category_id;
     div.querySelector('#tx-desc').value = tx.description || '';
-    
-    modal.showModal();
+
+    if (!modal.open) modal.showModal();
   };
 
   div.querySelector('#tx-cancel').addEventListener('click', () => modal.close());

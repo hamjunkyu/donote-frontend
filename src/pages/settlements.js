@@ -156,7 +156,7 @@ export function renderSettlements() {
           } else {
             const rowsHtml = debts.map(d => `
               <div class="flex-between" style="padding: 0.3rem 0; font-size: 0.9rem;">
-                <span><strong>${escapeHtml(d.from)}</strong> <span class="text-muted">→</span> ${escapeHtml(d.to)}</span>
+                <span><strong>${escapeHtml(d.from ?? d.from_name)}</strong> <span class="text-muted">→</span> ${escapeHtml(d.to ?? d.to_name)}</span>
                 <span class="text-expense" style="font-weight: 700;">${formatCurrency(d.amount)}</span>
               </div>
             `).join('');
@@ -389,7 +389,7 @@ export function renderSettlements() {
     participantList.innerHTML = '';
     addParticipantRow();
     addParticipantRow();
-    modal.showModal();
+    if (!modal.open) modal.showModal();
   });
 
   div.querySelector('#s-cancel').addEventListener('click', () => {
@@ -521,7 +521,7 @@ export function renderSettlements() {
     editSplitTypeSelect.value = settlement.split_type;
     refreshEditPartSection();
     updateEditSum();
-    editModal.showModal();
+    if (!editModal.open) editModal.showModal();
   }
 
   div.querySelector('#edit-s-cancel').addEventListener('click', () => editModal.close());

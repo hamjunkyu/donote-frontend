@@ -401,7 +401,7 @@ export function renderGoals() {
     div.querySelector('#g-amount').value = goal.target_amount;
     div.querySelector('#g-date').value = goal.target_date || '';
     div.querySelector('#g-desc').value = goal.description || '';
-    modal.showModal();
+    if (!modal.open) modal.showModal();
   }
 
   // 생성 버튼
@@ -410,7 +410,7 @@ export function renderGoals() {
     div.querySelector('#g-submit').textContent = '목표 생성';
     div.querySelector('#g-edit-id').value = '';
     form.reset();
-    modal.showModal();
+    if (!modal.open) modal.showModal();
   });
 
   div.querySelector('#g-cancel').addEventListener('click', () => modal.close());

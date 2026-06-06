@@ -154,7 +154,7 @@ export function renderBudget() {
   // 모달 제어
   addBtn.addEventListener('click', () => {
     form.reset();
-    modal.showModal();
+    if (!modal.open) modal.showModal();
   });
 
   cancelBtn.addEventListener('click', () => {
