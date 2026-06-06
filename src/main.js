@@ -35,8 +35,9 @@ export async function updateNotificationBadge() {
   if (!token) return;
 
   try {
-    const notifications = await api.get('/api/notifications');
-    const unreadCount = notifications.filter(n => !n.is_read).length;
+    // 안 읽은 알림만 1건 요청해 total로 미읽음 개수 파악 (페이지네이션 응답)
+    const res = await api.get('/api/notifications?unread=true&limit=1');
+    const unreadCount = res.total || 0;
     const label = unreadCount > 99 ? '99+' : String(unreadCount);
 
     document.querySelectorAll('.unread-count').forEach(el => {
