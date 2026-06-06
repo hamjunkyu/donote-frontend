@@ -129,16 +129,16 @@ export function renderGoals() {
         }
 
         card.innerHTML = `
-          <div class="flex-between mb-2">
+          <div class="flex-between" style="margin-bottom: 0.85rem;">
             <div style="display: flex; align-items: center; gap: 0.5rem; font-weight: 600; font-size: 1.2rem;">
               ${escapeHtml(g.name)}
               ${statusBadge(g.status)}${paceHint}
             </div>
             <div class="text-muted" style="font-size: 0.9rem;">${percent}%</div>
           </div>
-          <div style="margin-bottom: 0.5rem; color: var(--color-text-secondary); font-size: 0.95rem;">
-            <span style="font-weight: 600; color: var(--color-text-primary);">${formatCurrency(currentAmount)}</span> / ${formatCurrency(targetAmount)}
-            <span class="text-muted" style="margin-left: 0.5rem; font-size: 0.85rem;">남은 금액: ${formatCurrency(remaining)}</span>
+          <div class="flex-between" style="margin-bottom: 0.5rem; color: var(--color-text-secondary); font-size: 0.95rem;">
+            <span><span style="font-weight: 600; color: var(--color-text-primary);">${formatCurrency(currentAmount)}</span> / ${formatCurrency(targetAmount)}</span>
+            <span class="text-muted" style="font-size: 0.85rem;">남은 금액: ${formatCurrency(remaining)}</span>
           </div>
           <div style="width: 100%; height: 10px; background: #e9ecef; border-radius: 5px; overflow: hidden;">
             <div style="width: ${percent}%; height: 100%; background: ${barColor}; transition: width 0.5s ease;"></div>
