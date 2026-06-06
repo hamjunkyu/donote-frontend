@@ -1,4 +1,9 @@
 import { api } from '../api.js';
+import { reloadCurrentRoute } from '../router.js';
+import { getSelectedMonth, setSelectedMonth, shiftMonth, formatMonthLabel } from './period.js';
+
+// 월 선택기를 노출할 페이지 (기간 기반 화면)
+const MONTH_NAV_PAGES = ['dashboard', 'statistics', 'budget'];
 
 // 로그인 사용자 정보 캐시 (SPA 세션 동안 /api/auth/me 1회만 호출)
 let cachedUser = null;
@@ -26,6 +31,13 @@ export function createPageLayout(activeNav, contentHtml) {
   ];
 
   const currentTitle = (navItems.find(i => i.id === activeNav) || {}).label || 'Donote';
+  const showMonthNav = MONTH_NAV_PAGES.includes(activeNav);
+  const monthNavHtml = showMonthNav ? `
+    <div class="month-nav">
+      <button class="month-nav-btn" id="month-prev" aria-label="이전 달">‹</button>
+      <span class="month-nav-label">${formatMonthLabel(getSelectedMonth())}</span>
+      <button class="month-nav-btn" id="month-next" aria-label="다음 달">›</button>
+    </div>` : '';
 
   const sidebarLinksHtml = navItems.map(item => `
     <a href="${item.href}" class="sidebar-link ${activeNav === item.id ? 'active' : ''}">
@@ -64,7 +76,10 @@ export function createPageLayout(activeNav, contentHtml) {
         <!-- Desktop Header -->
         <header class="app-header">
           <div class="app-header-inner">
-            <div class="app-header-title">${currentTitle}</div>
+            <div class="app-header-left">
+              <div class="app-header-title">${currentTitle}</div>
+              ${monthNavHtml}
+            </div>
             <div class="app-header-actions">
               <button id="btn-quick-add" class="btn btn-primary app-header-add">+ 거래 추가</button>
               <a href="#/notifications" class="app-header-bell" aria-label="알림">🔔<span class="unread-count"></span></a>
@@ -127,6 +142,22 @@ export function bindLayoutEvents(container) {
     quickAdd.addEventListener('click', () => {
       sessionStorage.setItem('open_tx_modal', '1');
       window.location.hash = '#/transactions';
+    });
+  }
+
+  // 월 이동: 선택 월 변경 후 현재 페이지 재렌더로 데이터 갱신
+  const monthPrev = container.querySelector('#month-prev');
+  const monthNext = container.querySelector('#month-next');
+  if (monthPrev) {
+    monthPrev.addEventListener('click', () => {
+      setSelectedMonth(shiftMonth(getSelectedMonth(), -1));
+      reloadCurrentRoute();
+    });
+  }
+  if (monthNext) {
+    monthNext.addEventListener('click', () => {
+      setSelectedMonth(shiftMonth(getSelectedMonth(), 1));
+      reloadCurrentRoute();
     });
   }
 }

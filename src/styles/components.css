@@ -289,10 +289,49 @@ dialog {
   gap: var(--spacing-md);
 }
 
+.app-header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
 .app-header-title {
   font-size: 1.25rem;
   font-weight: 700;
   color: var(--color-text-primary);
+}
+
+/* 월 선택기 */
+.month-nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--color-background);
+  border-radius: var(--radius-md);
+  padding: 2px;
+}
+
+.month-nav-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  font-size: 1.1rem;
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.month-nav-btn:hover {
+  background: var(--color-surface);
+  color: var(--color-primary);
+}
+
+.month-nav-label {
+  font-weight: 700;
+  font-size: 0.95rem;
+  min-width: 92px;
+  text-align: center;
 }
 
 .app-header-actions {

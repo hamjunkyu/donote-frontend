@@ -1,10 +1,11 @@
 import { api } from '../api.js';
-import { formatCurrency, getCurrentMonthStr, escapeHtml } from '../utils/formatters.js';
+import { formatCurrency, escapeHtml } from '../utils/formatters.js';
 import { createPageLayout, bindLayoutEvents } from '../utils/layout.js';
+import { getSelectedMonth } from '../utils/period.js';
 
 export function renderBudget() {
   const div = document.createElement('div');
-  const monthStr = getCurrentMonthStr();
+  const monthStr = getSelectedMonth();
   
   const contentHtml = `
     <div class="flex-between mb-4">

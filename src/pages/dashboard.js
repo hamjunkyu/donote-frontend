@@ -2,6 +2,7 @@ import { api, unwrapList } from '../api.js';
 import { formatCurrency, formatDate, escapeHtml } from '../utils/formatters.js';
 import { createPageLayout, bindLayoutEvents } from '../utils/layout.js';
 import { renderCategoryWithIcon } from '../utils/category-icons.js';
+import { getSelectedMonth, formatMonthLabel } from '../utils/period.js';
 
 export function renderDashboard() {
   const div = document.createElement('div');
@@ -54,10 +55,9 @@ export function renderDashboard() {
 
   div.innerHTML = createPageLayout('dashboard', contentHtml);
 
-  // 현재 월 설정
-  const now = new Date();
-  const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  div.querySelector('#current-month').textContent = `${now.getFullYear()}년 ${now.getMonth() + 1}월`;
+  // 선택된 월 (헤더 월 선택기와 공유)
+  const currentMonthStr = getSelectedMonth();
+  div.querySelector('#current-month').textContent = formatMonthLabel(currentMonthStr);
 
   const loadDashboardData = async () => {
     try {

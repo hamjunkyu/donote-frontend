@@ -1,10 +1,11 @@
 import { api } from '../api.js';
-import { formatCurrency, getCurrentMonthStr } from '../utils/formatters.js';
+import { formatCurrency } from '../utils/formatters.js';
 import { createPageLayout, bindLayoutEvents } from '../utils/layout.js';
+import { getSelectedMonth } from '../utils/period.js';
 
 export function renderStatistics() {
   const div = document.createElement('div');
-  const monthStr = getCurrentMonthStr();
+  const monthStr = getSelectedMonth();
   
   // 현재 달의 시작일과 마지막 일 계산
   const [year, month] = monthStr.split('-');

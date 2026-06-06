@@ -57,8 +57,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const app = document.querySelector('#app');
   initRouter(app);
 
-  // Update badge on load and hash change
-  window.addEventListener('hashchange', () => setTimeout(updateNotificationBadge, 50));
-  window.addEventListener('load', () => setTimeout(updateNotificationBadge, 50));
-  setTimeout(updateNotificationBadge, 200); // 초기 실행
+  // 라우트 렌더 완료 후 알림 배지 갱신 (DOM 준비된 시점이라 타이밍 추정 불필요)
+  window.addEventListener('route:rendered', () => updateNotificationBadge());
 });
