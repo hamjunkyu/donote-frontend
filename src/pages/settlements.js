@@ -124,21 +124,21 @@ export function renderSettlements() {
         const isCompleted = s.status === 'COMPLETED';
 
         let statusBadge = '';
-        if (isPending) statusBadge = '<span style="background: #fcc419; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem;">진행중</span>';
-        else if (isCompleted) statusBadge = '<span style="background: #40c057; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem;">완료됨</span>';
-        else statusBadge = '<span style="background: #fa5252; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem;">취소됨</span>';
+        if (isPending) statusBadge = '<span style="background: #fcc419; color: #fff; padding: 3px 9px; border-radius: 4px; font-size: 0.8rem;">진행중</span>';
+        else if (isCompleted) statusBadge = '<span style="background: #40c057; color: #fff; padding: 3px 9px; border-radius: 4px; font-size: 0.8rem;">완료됨</span>';
+        else statusBadge = '<span style="background: #fa5252; color: #fff; padding: 3px 9px; border-radius: 4px; font-size: 0.8rem;">취소됨</span>';
 
         let pListHtml = '';
         participants.forEach(p => {
           const isSettled = p.status === 'SETTLED';
           pListHtml += `
-            <div class="flex-between" style="padding: 0.5rem 0; border-bottom: 1px solid var(--color-border);">
+            <div class="flex-between" style="padding: 0.65rem 0; border-bottom: 1px solid var(--color-border);">
               <span>${escapeHtml(p.display_name)}</span>
-              <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <div style="display: flex; align-items: center; gap: 0.6rem;">
                 <span class="${isSettled ? 'text-income' : 'text-expense'}" style="font-weight: 600;">
                   ${formatCurrency(p.amount)}
                 </span>
-                ${!isSettled && isPending ? `<button class="btn-settle" data-sid="${s.id}" data-pid="${p.id}" style="background: var(--color-primary); color: white; border: none; padding: 0.2rem 0.5rem; border-radius: 4px; cursor: pointer; font-size: 0.7rem;">완료</button>` : ''}
+                ${!isSettled && isPending ? `<button class="btn-settle" data-sid="${s.id}" data-pid="${p.id}" style="background: var(--color-primary); color: white; border: none; padding: 0.3rem 0.65rem; border-radius: 4px; cursor: pointer; font-size: 0.75rem;">완료</button>` : ''}
               </div>
             </div>
           `;
@@ -195,19 +195,19 @@ export function renderSettlements() {
           : '';
 
         card.innerHTML = `
-          <div class="flex-between mb-2">
-            <div style="font-weight: 600; font-size: 1.1rem;">
+          <div class="flex-between" style="margin-bottom: 0.85rem;">
+            <div style="display: flex; align-items: center; gap: 0.5rem; font-weight: 600; font-size: 1.2rem;">
               총 ${formatCurrency(s.total_amount)}
               ${statusBadge}
             </div>
             ${actionBtnsHtml}
           </div>
           ${burdenHtml}
-          <div class="flex-between mb-3 text-muted" style="font-size: 0.85rem;">
+          <div class="flex-between text-muted" style="font-size: 0.85rem; margin-bottom: 0.75rem;">
             <span>분배 방식: ${s.split_type === 'EQUAL' ? '균등 분배' : '직접 입력'}</span>
             <span style="font-weight: 600; color: var(--color-primary);">정산 상태: ${settledCount}/${totalCount} 완료</span>
           </div>
-          <div style="background: var(--color-background); border-radius: 8px; padding: 0.5rem;">
+          <div style="background: var(--color-background); border-radius: 8px; padding: 0.25rem 0.85rem;">
             ${pListHtml}
           </div>
           ${debtsHtml}
