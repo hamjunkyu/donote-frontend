@@ -1,4 +1,4 @@
-import { api, unwrapList } from '../api.js';
+import { api } from '../api.js';
 import { formatCurrency, formatDate, escapeHtml } from '../utils/formatters.js';
 import { createPageLayout, bindLayoutEvents } from '../utils/layout.js';
 import { renderCategoryWithIcon } from '../utils/category-icons.js';
@@ -9,21 +9,30 @@ export function renderTransactions() {
   const contentHtml = `
     <div class="flex-between mb-4">
       <h2 style="font-size: 1.5rem; margin: 0; font-weight: 700;">거래 내역</h2>
-      <div style="display: flex; gap: var(--spacing-sm); align-items: center;">
-        <select id="filter-type" class="form-control" style="width: auto; padding: 0.4rem 0.8rem; font-size: 0.85rem; border-radius: var(--radius-md); background-color: var(--color-background); border: 1px solid var(--color-border);">
-          <option value="">전체 내역</option>
-          <option value="EXPENSE">지출만</option>
-          <option value="INCOME">수입만</option>
-        </select>
-        <button class="btn btn-primary" id="btn-add-tx" style="width: auto; padding: 0.45rem 1rem; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 4px;">
-          + 내역 추가
-        </button>
-      </div>
+      <button class="btn btn-primary" id="btn-add-tx" style="width: auto; padding: 0.45rem 1rem; font-size: 0.85rem; font-weight: 600;">+ 내역 추가</button>
     </div>
-    
+
+    <div class="card tx-filters">
+      <select id="filter-type" class="form-control">
+        <option value="">전체 유형</option>
+        <option value="EXPENSE">지출</option>
+        <option value="INCOME">수입</option>
+      </select>
+      <select id="filter-category" class="form-control">
+        <option value="">전체 카테고리</option>
+      </select>
+      <input type="date" id="filter-from" class="form-control" aria-label="시작일" />
+      <input type="date" id="filter-to" class="form-control" aria-label="종료일" />
+      <input type="text" id="filter-keyword" class="form-control" placeholder="내용 검색" />
+      <button class="btn btn-outline" id="filter-apply" style="width: auto; padding: 0.45rem 0.9rem; font-size: 0.85rem;">검색</button>
+      <button class="btn btn-outline" id="filter-reset" style="width: auto; padding: 0.45rem 0.9rem; font-size: 0.85rem;">초기화</button>
+    </div>
+
     <div id="tx-list">
       <div class="text-center text-muted mt-4">로딩 중...</div>
     </div>
+
+    <div id="tx-pagination" class="tx-pagination"></div>
 
     <!-- 거래 추가/수정 모달 -->
     <dialog id="tx-modal" style="border: none; border-radius: var(--radius-lg); padding: var(--spacing-lg); width: 90%; max-width: 450px; box-shadow: var(--shadow-lg);">
@@ -77,8 +86,16 @@ export function renderTransactions() {
   const modal = div.querySelector('#tx-modal');
   const form = div.querySelector('#tx-form');
   const filterType = div.querySelector('#filter-type');
+  const filterCategory = div.querySelector('#filter-category');
+  const filterFrom = div.querySelector('#filter-from');
+  const filterTo = div.querySelector('#filter-to');
+  const filterKeyword = div.querySelector('#filter-keyword');
+  const paginationEl = div.querySelector('#tx-pagination');
   const categorySelect = div.querySelector('#tx-category');
 
+  const PAGE_SIZE = 20;
+  let offset = 0;
+  let total = 0;
   let allCategories = [];
   let currentTransactions = [];
 
@@ -107,6 +124,12 @@ export function renderTransactions() {
   const loadCategories = async () => {
     try {
       allCategories = await api.get('/api/categories/');
+      allCategories.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.id;
+        opt.textContent = c.name;
+        filterCategory.appendChild(opt);
+      });
     } catch (err) {
       console.error('카테고리 로드 실패', err);
     }
@@ -126,15 +149,10 @@ export function renderTransactions() {
 
   const renderList = () => {
     listContainer.innerHTML = '';
-    const filterVal = filterType.value;
-    
-    let filtered = currentTransactions;
-    if (filterVal) {
-      filtered = currentTransactions.filter(t => t.type === filterVal);
-    }
+    const filtered = currentTransactions;
 
     if (filtered.length === 0) {
-      listContainer.innerHTML = '<div class="card text-center text-muted" style="padding: 3rem 1rem;">거래 내역이 없습니다.</div>';
+      listContainer.innerHTML = '<div class="card text-center text-muted" style="padding: 3rem 1rem;">조건에 맞는 거래 내역이 없습니다.</div>';
       return;
     }
 
@@ -254,17 +272,70 @@ export function renderTransactions() {
     }
   };
 
+  const buildQuery = () => {
+    const params = new URLSearchParams();
+    params.set('limit', PAGE_SIZE);
+    params.set('offset', offset);
+    if (filterType.value) params.set('type', filterType.value);
+    if (filterCategory.value) params.set('category_id', filterCategory.value);
+    if (filterFrom.value) params.set('date_from', filterFrom.value);
+    if (filterTo.value) params.set('date_to', filterTo.value);
+    const kw = filterKeyword.value.trim();
+    if (kw) params.set('keyword', kw);
+    return params.toString();
+  };
+
+  const renderPagination = () => {
+    if (total === 0) { paginationEl.innerHTML = ''; return; }
+    const start = offset + 1;
+    const end = Math.min(offset + PAGE_SIZE, total);
+    const hasPrev = offset > 0;
+    const hasNext = offset + PAGE_SIZE < total;
+    paginationEl.innerHTML = `
+      <span class="text-muted" style="font-size: 0.85rem;">총 ${total}건 중 ${start}–${end}</span>
+      <div style="display: flex; gap: 0.5rem;">
+        <button class="btn btn-outline" id="page-prev" style="width: auto; padding: 0.35rem 0.8rem; font-size: 0.85rem;" ${hasPrev ? '' : 'disabled'}>이전</button>
+        <button class="btn btn-outline" id="page-next" style="width: auto; padding: 0.35rem 0.8rem; font-size: 0.85rem;" ${hasNext ? '' : 'disabled'}>다음</button>
+      </div>
+    `;
+    paginationEl.querySelector('#page-prev').addEventListener('click', () => {
+      if (offset > 0) { offset -= PAGE_SIZE; loadTransactions(); }
+    });
+    paginationEl.querySelector('#page-next').addEventListener('click', () => {
+      if (offset + PAGE_SIZE < total) { offset += PAGE_SIZE; loadTransactions(); }
+    });
+  };
+
   const loadTransactions = async () => {
     try {
       listContainer.innerHTML = '<div class="text-center text-muted mt-4">로딩 중...</div>';
-      currentTransactions = unwrapList(await api.get('/api/transactions/?limit=100'));
+      const res = await api.get(`/api/transactions/?${buildQuery()}`);
+      currentTransactions = res.items || [];
+      total = res.total || 0;
       renderList();
+      renderPagination();
     } catch (err) {
       listContainer.innerHTML = '<div class="alert alert-important">내역을 불러오지 못했습니다.</div>';
+      paginationEl.innerHTML = '';
     }
   };
 
-  filterType.addEventListener('change', renderList);
+  const applyFilters = () => { offset = 0; loadTransactions(); };
+
+  filterType.addEventListener('change', applyFilters);
+  filterCategory.addEventListener('change', applyFilters);
+  filterFrom.addEventListener('change', applyFilters);
+  filterTo.addEventListener('change', applyFilters);
+  filterKeyword.addEventListener('keyup', (e) => { if (e.key === 'Enter') applyFilters(); });
+  div.querySelector('#filter-apply').addEventListener('click', applyFilters);
+  div.querySelector('#filter-reset').addEventListener('click', () => {
+    filterType.value = '';
+    filterCategory.value = '';
+    filterFrom.value = '';
+    filterTo.value = '';
+    filterKeyword.value = '';
+    applyFilters();
+  });
   
   // 새 거래 내역 추가 버튼 연결
   const addBtn = div.querySelector('#btn-add-tx');
@@ -339,7 +410,7 @@ export function renderTransactions() {
         await api.post('/api/transactions/', payload);
       }
       modal.close();
-      loadTransactions();
+      if (editId) loadTransactions(); else applyFilters();
     } catch (err) {
       alert((editId ? '수정' : '추가') + ' 실패: ' + err.message);
     } finally {

@@ -474,6 +474,39 @@ dialog {
   }
 }
 
+/* Transactions filter bar + pagination */
+.tx-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+}
+
+.tx-filters .form-control {
+  width: auto;
+  flex: 0 1 auto;
+  padding: 0.4rem 0.7rem;
+  font-size: 0.85rem;
+}
+
+.tx-filters #filter-keyword {
+  flex: 1 1 160px;
+  min-width: 140px;
+}
+
+.tx-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: var(--spacing-md);
+}
+
+.tx-pagination button[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 /* Statistics */
 .stats-cards {
   display: grid;
