@@ -474,6 +474,20 @@ dialog {
   }
 }
 
+/* Dashboard */
+.dashboard-summary {
+  background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-primary-light) 100%);
+  border: none;
+  padding: 2rem 1.5rem;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+
 /* Financial UI Components */
 .amount-large {
   font-size: 2rem;

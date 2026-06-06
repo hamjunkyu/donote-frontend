@@ -6,85 +6,128 @@ import { getSelectedMonth, formatMonthLabel } from '../utils/period.js';
 
 export function renderDashboard() {
   const div = document.createElement('div');
-  
+  const currentMonthStr = getSelectedMonth();
+
   const contentHtml = `
-    <!-- 1. 이번 달 대형 요약 카드 -->
-    <div class="card" style="background: linear-gradient(135deg, var(--color-surface) 0%, var(--color-primary-light) 100%); border: none; padding: 2rem 1.5rem;">
+    <!-- 이번 달 요약 -->
+    <div class="card dashboard-summary">
       <div class="flex-between mb-4">
-        <h2 id="current-month" style="color: var(--color-primary); font-size: 1.15rem; margin: 0; font-weight: 700;">로딩 중...</h2>
+        <h2 id="current-month" style="color: var(--color-primary); font-size: 1.15rem; margin: 0; font-weight: 700;">${formatMonthLabel(currentMonthStr)}</h2>
+        <span class="text-muted" id="daily-avg" style="font-size: 0.8rem;"></span>
       </div>
-      
+
       <div class="flex-between mb-2">
         <span class="text-muted" style="font-weight: 500;">수입</span>
         <span class="amount-medium text-income" id="total-income">+0원</span>
       </div>
-      <div class="flex-between mb-4">
+      <div class="flex-between mb-2">
         <span class="text-muted" style="font-weight: 500;">지출</span>
         <span class="amount-medium text-expense" id="total-expense">-0원</span>
       </div>
-      
-      <div style="height: 1px; background-color: rgba(0,0,0,0.05); margin-bottom: 1rem;"></div>
-      
+      <div class="flex-between mb-4">
+        <span class="text-muted" style="font-weight: 500;">전월 대비</span>
+        <span id="vs-last-month" style="font-size: 0.9rem; font-weight: 600;">-</span>
+      </div>
+
+      <div style="height: 1px; background-color: rgba(0,0,0,0.06); margin-bottom: 1rem;"></div>
+
       <div class="flex-between">
         <span style="font-weight: 600; font-size: 1.1rem; color: var(--color-text-primary);">잔액</span>
         <span class="amount-large" id="total-balance" style="color: var(--color-primary);">0원</span>
       </div>
     </div>
 
-    <!-- 2. 지출/수입 TOP 3 카드 -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
-      
-      <div class="card stat-card">
+    <!-- 위젯 그리드 -->
+    <div class="dashboard-grid">
+      <div class="card">
         <h3 class="card-title">💸 지출 TOP 3</h3>
-        <div id="expense-top3">
-          <div class="text-center text-muted" style="padding: 1rem 0;">데이터가 없습니다.</div>
-        </div>
+        <div id="expense-top3"><div class="text-center text-muted" style="padding: 1rem 0;">로딩 중...</div></div>
       </div>
-      
+
+      <div class="card">
+        <div class="flex-between mb-4">
+          <h3 class="card-title" style="margin: 0;">🎯 예산 현황</h3>
+          <a href="#/budget" class="text-primary" style="font-size: 0.8rem;">전체</a>
+        </div>
+        <div id="budget-widget"><div class="text-center text-muted" style="padding: 1rem 0;">로딩 중...</div></div>
+      </div>
+
+      <div class="card">
+        <div class="flex-between mb-4">
+          <h3 class="card-title" style="margin: 0;">🏆 목표 진행</h3>
+          <a href="#/goals" class="text-primary" style="font-size: 0.8rem;">전체</a>
+        </div>
+        <div id="goals-widget"><div class="text-center text-muted" style="padding: 1rem 0;">로딩 중...</div></div>
+      </div>
     </div>
 
-    <!-- 3. 최근 거래내역 (날짜별) -->
-    <h3 class="mt-4 mb-2" style="font-size: 1.1rem; font-weight: 700;">최근 내역</h3>
+    <!-- 최근 거래 -->
+    <div class="flex-between mt-4 mb-2">
+      <h3 style="font-size: 1.1rem; font-weight: 700;">최근 내역</h3>
+      <a href="#/transactions" class="text-primary" style="font-size: 0.85rem;">전체 보기</a>
+    </div>
     <div id="recent-transactions">
       <div class="text-center text-muted mt-4">로딩 중...</div>
     </div>
 
-    <!-- 빠른 거래 추가 FAB -->
     <button class="fab" id="btn-fab-add" aria-label="거래 추가" title="거래 추가">+</button>
   `;
 
   div.innerHTML = createPageLayout('dashboard', contentHtml);
 
-  // 선택된 월 (헤더 월 선택기와 공유)
-  const currentMonthStr = getSelectedMonth();
-  div.querySelector('#current-month').textContent = formatMonthLabel(currentMonthStr);
+  // 빈 상태 CTA / FAB 공통: 거래 페이지로 이동하며 추가 모달 자동 오픈
+  function goToAddTransaction() {
+    sessionStorage.setItem('open_tx_modal', '1');
+    window.location.hash = '#/transactions';
+  }
 
-  const loadDashboardData = async () => {
+  const miniBar = (percent, color) => `
+    <div style="width: 100%; height: 6px; background: var(--color-background); border-radius: 3px; overflow: hidden;">
+      <div style="width: ${Math.min(percent, 100)}%; height: 100%; background: ${color};"></div>
+    </div>
+  `;
+
+  // 1. 월 요약 + 전월대비 + 지출 TOP 3
+  const loadSummary = async () => {
     try {
-      // 1. 요약 데이터 조회
       const summary = await api.get(`/api/statistics/monthly-report?month=${currentMonthStr}`);
+
       div.querySelector('#total-income').textContent = '+' + formatCurrency(summary.total_income);
       div.querySelector('#total-expense').textContent = '-' + formatCurrency(summary.total_expense);
 
       const balance = summary.total_income - summary.total_expense;
       const balanceEl = div.querySelector('#total-balance');
       balanceEl.textContent = (balance < 0 ? '-' : '') + formatCurrency(Math.abs(balance));
-      balanceEl.style.color = balance < 0
-        ? 'var(--color-expense)'
-        : 'var(--color-primary)';
+      balanceEl.style.color = balance < 0 ? 'var(--color-expense)' : 'var(--color-primary)';
 
-      // 2. 카테고리별 지출 데이터 (최대 3개)
-      let expenses = [];
-      if (summary.top_categories) {
-        expenses = summary.top_categories.slice(0, 3);
+      if (summary.daily_average_expense != null) {
+        div.querySelector('#daily-avg').textContent = `일평균 지출 ${formatCurrency(summary.daily_average_expense)}`;
       }
-      
+
+      // 전월 대비 지출 증감
+      const vsEl = div.querySelector('#vs-last-month');
+      const vs = summary.vs_last_month;
+      if (vs && (vs.message && (vs.message.includes('없') || /no previous/i.test(vs.message)))) {
+        vsEl.textContent = '전월 데이터 없음';
+        vsEl.style.color = 'var(--color-text-secondary)';
+      } else if (vs && typeof vs.expense_change === 'number') {
+        const ch = vs.expense_change;
+        if (ch > 0) { vsEl.textContent = `지출 ▲ ${ch}%`; vsEl.style.color = 'var(--color-expense)'; }
+        else if (ch < 0) { vsEl.textContent = `지출 ▼ ${Math.abs(ch)}%`; vsEl.style.color = 'var(--color-income)'; }
+        else { vsEl.textContent = '전월과 동일'; vsEl.style.color = 'var(--color-text-secondary)'; }
+      } else {
+        vsEl.textContent = '-';
+      }
+
+      // 지출 TOP 3
       const expContainer = div.querySelector('#expense-top3');
-      if (expenses.length > 0) {
+      const expenses = (summary.top_categories || []).slice(0, 3);
+      if (expenses.length === 0) {
+        expContainer.innerHTML = '<div class="text-center text-muted" style="padding: 1rem 0;">지출 내역이 없습니다.</div>';
+      } else {
         expContainer.innerHTML = '';
         expenses.forEach(c => {
           const percent = summary.total_expense > 0 ? Math.round((c.amount / summary.total_expense) * 100) : 0;
-          
           const row = document.createElement('div');
           row.style.marginBottom = '0.75rem';
           row.innerHTML = `
@@ -92,19 +135,100 @@ export function renderDashboard() {
               ${renderCategoryWithIcon(c.name, 'EXPENSE')}
               <div style="text-align: right;">
                 <span style="font-weight: 600;">${formatCurrency(c.amount)}</span>
-                <span class="text-muted" style="margin-left: 0.5rem; font-size: 0.8rem; width: 30px; display: inline-block;">${percent}%</span>
+                <span class="text-muted" style="margin-left: 0.5rem; font-size: 0.8rem;">${percent}%</span>
               </div>
             </div>
-            <div style="width: 100%; height: 6px; background: var(--color-background); border-radius: 3px; overflow: hidden;">
-              <div style="width: ${percent}%; height: 100%; background: var(--color-expense);"></div>
-            </div>
+            ${miniBar(percent, 'var(--color-expense)')}
           `;
           expContainer.appendChild(row);
         });
       }
+    } catch (err) {
+      div.querySelector('#vs-last-month').textContent = '불러오기 실패';
+      div.querySelector('#expense-top3').innerHTML =
+        '<div class="text-center text-muted" style="padding: 1rem 0;">불러오기 실패</div>';
+    }
+  };
 
-      // 3. 최근 거래 내역 (최대 10개, 날짜별 그룹핑)
-      const txContainer = div.querySelector('#recent-transactions');
+  // 2. 예산 현황 위젯
+  const loadBudgetWidget = async () => {
+    const el = div.querySelector('#budget-widget');
+    try {
+      const res = await api.get(`/api/budgets/${currentMonthStr}`);
+      const budgets = res.budgets || [];
+      const overall = budgets.find(b => b.category_id == null);
+      const categoryBudgets = budgets.filter(b => b.category_id != null);
+
+      if (!overall && categoryBudgets.length === 0) {
+        el.innerHTML = `
+          <div class="text-center text-muted" style="padding: 0.5rem 0;">설정된 예산이 없습니다.</div>
+          <a href="#/budget" class="btn btn-outline" style="margin-top: 0.5rem; padding: 0.4rem; font-size: 0.85rem;">예산 설정하기</a>
+        `;
+        return;
+      }
+
+      let html = '';
+      if (overall) {
+        let color = 'var(--color-primary)';
+        if (overall.status === 'WARNING') color = '#f59f00';
+        if (overall.status === 'EXCEEDED') color = 'var(--color-expense)';
+        html += `
+          <div class="flex-between mb-1" style="font-size: 0.9rem;">
+            <span class="text-muted">전체 예산</span>
+            <span style="font-weight: 600; color: ${color};">${overall.usage_rate}%</span>
+          </div>
+          ${miniBar(overall.usage_rate, color)}
+          <div class="text-muted" style="font-size: 0.8rem; margin-top: 4px;">${formatCurrency(overall.spent)} / ${formatCurrency(overall.budget)}</div>
+        `;
+      }
+
+      const alertCount = categoryBudgets.filter(b => b.status !== 'SAFE').length;
+      if (categoryBudgets.length > 0) {
+        html += `<div class="text-muted" style="font-size: 0.8rem; margin-top: 0.75rem;">카테고리 예산 ${categoryBudgets.length}개${alertCount > 0 ? ` · <span class="text-expense">주의/초과 ${alertCount}개</span>` : ''}</div>`;
+      }
+      el.innerHTML = html;
+    } catch (err) {
+      el.innerHTML = '<div class="text-center text-muted" style="padding: 0.5rem 0;">예산을 불러오지 못했습니다.</div>';
+    }
+  };
+
+  // 3. 목표 진행 위젯
+  const loadGoalsWidget = async () => {
+    const el = div.querySelector('#goals-widget');
+    try {
+      const goals = unwrapList(await api.get('/api/goals/')).slice(0, 3);
+      if (goals.length === 0) {
+        el.innerHTML = `
+          <div class="text-center text-muted" style="padding: 0.5rem 0;">등록된 목표가 없습니다.</div>
+          <a href="#/goals" class="btn btn-outline" style="margin-top: 0.5rem; padding: 0.4rem; font-size: 0.85rem;">목표 만들기</a>
+        `;
+        return;
+      }
+      el.innerHTML = '';
+      goals.forEach(g => {
+        const cur = g.current_amount ?? 0;
+        const target = g.target_amount ?? 1;
+        const percent = Math.min(100, Math.floor((cur / target) * 100));
+        const row = document.createElement('div');
+        row.style.marginBottom = '0.75rem';
+        row.innerHTML = `
+          <div class="flex-between mb-1" style="font-size: 0.9rem;">
+            <span style="font-weight: 500;">${escapeHtml(g.name)}</span>
+            <span class="text-muted" style="font-size: 0.8rem;">${percent}%</span>
+          </div>
+          ${miniBar(percent, percent >= 100 ? 'var(--color-income)' : 'var(--color-primary)')}
+        `;
+        el.appendChild(row);
+      });
+    } catch (err) {
+      el.innerHTML = '<div class="text-center text-muted" style="padding: 0.5rem 0;">목표를 불러오지 못했습니다.</div>';
+    }
+  };
+
+  // 4. 최근 거래
+  const loadRecentTx = async () => {
+    const txContainer = div.querySelector('#recent-transactions');
+    try {
       const recentTx = unwrapList(await api.get('/api/transactions/?limit=10'));
 
       if (recentTx.length === 0) {
@@ -121,7 +245,6 @@ export function renderDashboard() {
 
       txContainer.innerHTML = '';
       let currentDate = '';
-
       recentTx.forEach(tx => {
         if (tx.transaction_date !== currentDate) {
           const divider = document.createElement('div');
@@ -162,26 +285,18 @@ export function renderDashboard() {
         `;
         txContainer.appendChild(card);
       });
-
     } catch (err) {
-      console.error(err);
-      div.querySelector('#current-month').textContent = '데이터를 불러오지 못했습니다';
-      div.querySelector('#expense-top3').innerHTML =
-        '<div class="text-center text-muted" style="padding: 1rem 0;">불러오기 실패</div>';
-      div.querySelector('#recent-transactions').innerHTML =
-        '<div class="alert alert-important">최근 내역을 불러오지 못했습니다.</div>';
+      txContainer.innerHTML = '<div class="alert alert-important">최근 내역을 불러오지 못했습니다.</div>';
     }
   };
 
-  // FAB 및 빈 상태 CTA 공통 핸들러: 거래 페이지로 이동하면서 모달 자동 오픈 플래그 설정
-  function goToAddTransaction() {
-    sessionStorage.setItem('open_tx_modal', '1');
-    window.location.hash = '#/transactions';
-  }
+  // 위젯별 독립 로딩 (하나 실패해도 나머지는 표시)
+  loadSummary();
+  loadBudgetWidget();
+  loadGoalsWidget();
+  loadRecentTx();
 
   div.querySelector('#btn-fab-add').addEventListener('click', goToAddTransaction);
-
-  loadDashboardData();
   bindLayoutEvents(div);
 
   return div;
