@@ -2,71 +2,74 @@ import { api, unwrapList } from '../api.js';
 import { formatCurrency, escapeHtml } from '../utils/formatters.js';
 import { createPageLayout, bindLayoutEvents } from '../utils/layout.js';
 
+const STATUS_BADGE = {
+  IN_PROGRESS: { bg: '#228be6', label: '진행중' },
+  ACHIEVED: { bg: '#40c057', label: '달성!' },
+  EXPIRED: { bg: '#868e96', label: '만료' },
+  CANCELLED: { bg: '#fa5252', label: '취소' },
+};
+
+function statusBadge(status) {
+  const s = STATUS_BADGE[status] || { bg: '#868e96', label: status };
+  return `<span style="background: ${s.bg}; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">${s.label}</span>`;
+}
+
 export function renderGoals() {
   const div = document.createElement('div');
-  
+
   const contentHtml = `
-    <!-- 상태 필터 탭 -->
     <div class="flex-between mb-4">
       <h2 style="font-size: 1.5rem;">저축 목표</h2>
       <button class="btn btn-primary" id="btn-add-goal" style="width: auto; padding: 0.4rem 1rem; font-size: 0.85rem;">목표 추가</button>
     </div>
-      <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; overflow-x: auto;">
-        <button class="filter-tab active" data-status="">전체</button>
-        <button class="filter-tab" data-status="ON_TRACK">순조로움</button>
-        <button class="filter-tab" data-status="BEHIND">뒤처짐</button>
-        <button class="filter-tab" data-status="ACHIEVED">달성</button>
-        <button class="filter-tab" data-status="EXPIRED">만료</button>
-        <button class="filter-tab" data-status="CANCELLED">취소</button>
-      </div>
-      
-      <div id="goal-list">
-        <div class="text-center text-muted mt-4">로딩 중...</div>
-      </div>
+    <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; overflow-x: auto;">
+      <button class="filter-tab active" data-status="">전체</button>
+      <button class="filter-tab" data-status="IN_PROGRESS">진행중</button>
+      <button class="filter-tab" data-status="ACHIEVED">달성</button>
+      <button class="filter-tab" data-status="EXPIRED">만료</button>
+      <button class="filter-tab" data-status="CANCELLED">취소</button>
+    </div>
 
-      <!-- 목표 생성 모달 -->
-      <dialog id="goal-modal" style="border: none; border-radius: var(--radius-lg); padding: var(--spacing-lg); width: 90%; max-width: 450px; box-shadow: var(--shadow-lg);">
-        <h3 class="mb-4" id="goal-modal-title">새 목표 만들기</h3>
-        <form id="goal-form">
-          <div class="form-group">
-            <label class="form-label">목표 이름</label>
-            <input type="text" id="g-name" class="form-control" placeholder="예) 여행자금" required />
-          </div>
-          <div class="form-group">
-            <label class="form-label">목표 금액</label>
-            <input type="number" id="g-amount" class="form-control" placeholder="예) 1000000" min="1" required />
-          </div>
-          <div class="form-group">
-            <label class="form-label">목표 기한 (선택)</label>
-            <input type="date" id="g-date" class="form-control" />
-          </div>
-          <div class="form-group">
-            <label class="form-label">설명 (선택)</label>
-            <input type="text" id="g-desc" class="form-control" placeholder="목표에 대한 메모" />
-          </div>
-          <div class="form-group mb-4">
-            <label class="form-label">연동할 카테고리</label>
-            <select id="g-category" class="form-control" required>
-              <option value="">불러오는 중...</option>
-            </select>
-            <div class="text-muted" style="font-size: 0.75rem; margin-top: 4px;">선택한 지출 카테고리에 쌓인 금액이 저축액으로 집계됩니다.</div>
-          </div>
-          
-          <input type="hidden" id="g-edit-id" value="" />
-          <div class="flex-between">
-            <button type="button" class="btn btn-outline" id="g-cancel" style="width: 48%;">취소</button>
-            <button type="submit" class="btn btn-primary" id="g-submit" style="width: 48%;">목표 생성</button>
-          </div>
-        </form>
-      </dialog>
+    <div id="goal-list">
+      <div class="text-center text-muted mt-4">로딩 중...</div>
+    </div>
 
-      <!-- 목표 상세 모달 -->
-      <dialog id="goal-detail-modal" style="border: none; border-radius: var(--radius-lg); padding: var(--spacing-lg); width: 90%; max-width: 500px; box-shadow: var(--shadow-lg); max-height: 85vh; overflow-y: auto;">
-        <div id="goal-detail-content">
-          <div class="text-center text-muted">로딩 중...</div>
+    <!-- 목표 생성/수정 모달 -->
+    <dialog id="goal-modal" style="border: none; border-radius: var(--radius-lg); padding: var(--spacing-lg); width: 90%; max-width: 450px; box-shadow: var(--shadow-lg);">
+      <h3 class="mb-4" id="goal-modal-title">새 목표 만들기</h3>
+      <form id="goal-form">
+        <div class="form-group">
+          <label class="form-label">목표 이름</label>
+          <input type="text" id="g-name" class="form-control" placeholder="예) 유럽 여행 자금" required maxlength="100" />
         </div>
-        <button type="button" class="btn btn-outline mt-4" id="detail-close" style="width: 100%;">닫기</button>
-      </dialog>
+        <div class="form-group">
+          <label class="form-label">목표 금액</label>
+          <input type="number" id="g-amount" class="form-control" placeholder="예) 3000000" min="1" step="1" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">목표 기한 (선택)</label>
+          <input type="date" id="g-date" class="form-control" />
+        </div>
+        <div class="form-group mb-4">
+          <label class="form-label">설명 (선택)</label>
+          <input type="text" id="g-desc" class="form-control" placeholder="목표에 대한 메모" maxlength="500" />
+        </div>
+
+        <input type="hidden" id="g-edit-id" value="" />
+        <div class="flex-between">
+          <button type="button" class="btn btn-outline" id="g-cancel" style="width: 48%;">취소</button>
+          <button type="submit" class="btn btn-primary" id="g-submit" style="width: 48%;">목표 생성</button>
+        </div>
+      </form>
+    </dialog>
+
+    <!-- 목표 상세 모달 -->
+    <dialog id="goal-detail-modal" style="border: none; border-radius: var(--radius-lg); padding: var(--spacing-lg); width: 90%; max-width: 500px; box-shadow: var(--shadow-lg); max-height: 85vh; overflow-y: auto;">
+      <div id="goal-detail-content">
+        <div class="text-center text-muted">로딩 중...</div>
+      </div>
+      <button type="button" class="btn btn-outline mt-4" id="detail-close" style="width: 100%;">닫기</button>
+    </dialog>
   `;
 
   div.innerHTML = createPageLayout('goals', contentHtml);
@@ -76,25 +79,10 @@ export function renderGoals() {
   const detailModal = div.querySelector('#goal-detail-modal');
   const addBtn = div.querySelector('#btn-add-goal');
   const form = div.querySelector('#goal-form');
-  const categorySelect = div.querySelector('#g-category');
 
   let currentFilter = '';
 
-  // 상태 뱃지 헬퍼
-  function statusBadge(status) {
-    const map = {
-      'IN_PROGRESS': { bg: '#fcc419', label: '진행중' },
-      'ACHIEVED':    { bg: '#40c057', label: '달성!' },
-      'BEHIND':      { bg: '#fd7e14', label: '뒤처짐' },
-      'EXPIRED':     { bg: '#868e96', label: '만료' },
-      'CANCELLED':   { bg: '#fa5252', label: '취소' },
-      'ON_TRACK':    { bg: '#228be6', label: '순조로움' },
-    };
-    const s = map[status] || { bg: '#868e96', label: status };
-    return `<span style="background: ${s.bg}; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600;">${s.label}</span>`;
-  }
-
-  // 필터 탭 이벤트
+  // 필터 탭
   div.querySelectorAll('.filter-tab').forEach(tab => {
     tab.addEventListener('click', () => {
       div.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
@@ -103,23 +91,6 @@ export function renderGoals() {
       loadGoals();
     });
   });
-
-  const loadCategories = async () => {
-    try {
-      const categories = await api.get('/api/categories/');
-      categorySelect.innerHTML = '<option value="">-- 연동할 카테고리 선택 --</option>';
-      categories
-        .filter(c => c.type === 'EXPENSE')
-        .forEach(c => {
-          const opt = document.createElement('option');
-          opt.value = c.id;
-          opt.textContent = c.name;
-          categorySelect.appendChild(opt);
-        });
-    } catch (err) {
-      categorySelect.innerHTML = '<option value="">카테고리 로드 실패</option>';
-    }
-  };
 
   const loadGoals = async () => {
     try {
@@ -137,53 +108,55 @@ export function renderGoals() {
         const card = document.createElement('div');
         card.className = 'card mb-3';
         card.style.cursor = 'pointer';
-        
+
         const currentAmount = g.current_amount ?? 0;
         const targetAmount = g.target_amount ?? 1;
         const percent = Math.min(100, Math.floor((currentAmount / targetAmount) * 100));
         const remaining = Math.max(0, targetAmount - currentAmount);
 
         let barColor = 'var(--color-primary)';
-        if (percent >= 100) barColor = '#40c057';
-        else if (g.status === 'BEHIND') barColor = '#fd7e14';
+        if (percent >= 100 || g.status === 'ACHIEVED') barColor = '#40c057';
         else if (g.status === 'EXPIRED' || g.status === 'CANCELLED') barColor = '#868e96';
+        else if (g.status === 'IN_PROGRESS' && g.on_track === false) barColor = '#fd7e14';
+
+        // 진행 중이며 기한이 있으면 페이스(순조/지연) 힌트
+        let paceHint = '';
+        if (g.status === 'IN_PROGRESS' && g.on_track != null) {
+          paceHint = g.on_track
+            ? '<span class="text-income" style="font-size: 0.75rem; margin-left: 0.5rem;">순조</span>'
+            : '<span class="text-expense" style="font-size: 0.75rem; margin-left: 0.5rem;">지연</span>';
+        }
 
         card.innerHTML = `
           <div class="flex-between mb-2">
             <div style="font-weight: 600; font-size: 1.1rem;">
               ${escapeHtml(g.name)}
-              ${statusBadge(g.status)}
+              ${statusBadge(g.status)}${paceHint}
             </div>
-            <div class="text-muted" style="font-size: 0.85rem;">
-              ${percent}%
-            </div>
+            <div class="text-muted" style="font-size: 0.85rem;">${percent}%</div>
           </div>
           <div style="margin-bottom: 0.5rem; color: var(--color-text-secondary); font-size: 0.9rem;">
-            <span style="font-weight:600; color: var(--color-text-primary);">${formatCurrency(currentAmount)}</span> / ${formatCurrency(targetAmount)}
+            <span style="font-weight: 600; color: var(--color-text-primary);">${formatCurrency(currentAmount)}</span> / ${formatCurrency(targetAmount)}
             <span class="text-muted" style="margin-left: 0.5rem; font-size: 0.8rem;">남은 금액: ${formatCurrency(remaining)}</span>
           </div>
-          
           <div style="width: 100%; height: 10px; background: #e9ecef; border-radius: 5px; overflow: hidden;">
             <div style="width: ${percent}%; height: 100%; background: ${barColor}; transition: width 0.5s ease;"></div>
           </div>
-
           <div class="flex-between mt-2" style="gap: 0.5rem;">
-            <button class="btn-goal-edit text-primary" style="font-size: 0.8rem;" data-id="${g.id}">✏️ 수정</button>
-            ${g.status === 'IN_PROGRESS' ? `<button class="btn-goal-cancel text-muted" style="font-size: 0.8rem;" data-id="${g.id}">⏸ 취소</button>` : ''}
-            <button class="btn-goal-delete text-expense" style="font-size: 0.8rem;" data-id="${g.id}">🗑 삭제</button>
+            <button class="btn-goal-edit text-primary" style="font-size: 0.8rem;">✏️ 수정</button>
+            ${g.status === 'IN_PROGRESS' ? '<button class="btn-goal-cancel text-muted" style="font-size: 0.8rem;">⏸ 취소</button>' : ''}
+            <button class="btn-goal-delete text-expense" style="font-size: 0.8rem;">🗑 삭제</button>
           </div>
         `;
 
         // 카드 클릭 → 상세
         card.addEventListener('click', (e) => {
-          if (e.target.closest('button')) return; // 버튼 클릭은 무시
+          if (e.target.closest('button')) return;
           openDetail(g.id);
         });
-        
-        // 수정 버튼
+
         card.querySelector('.btn-goal-edit').addEventListener('click', () => openEdit(g));
-        
-        // 취소 버튼
+
         const cancelBtn = card.querySelector('.btn-goal-cancel');
         if (cancelBtn) {
           cancelBtn.addEventListener('click', async (e) => {
@@ -198,10 +171,10 @@ export function renderGoals() {
           });
         }
 
-        // 삭제 버튼
         card.querySelector('.btn-goal-delete').addEventListener('click', async (e) => {
           e.preventDefault();
           e.stopPropagation();
+          if (!confirm('이 목표를 삭제할까요? 적립 내역도 함께 삭제됩니다.')) return;
           try {
             await api.delete(`/api/goals/${g.id}`);
             loadGoals();
@@ -217,7 +190,7 @@ export function renderGoals() {
     }
   };
 
-  // 상세 모달
+  // 상세 모달 (진행률 + 적립하기 + 예상 + 적립 내역)
   async function openDetail(goalId) {
     const content = div.querySelector('#goal-detail-content');
     content.innerHTML = '<div class="text-center text-muted">로딩 중...</div>';
@@ -225,14 +198,15 @@ export function renderGoals() {
     detailModal.showModal();
 
     try {
-      const [progress, forecast, txRes] = await Promise.all([
+      const [progress, forecast, contribRes] = await Promise.all([
         api.get(`/api/goals/${goalId}/progress`),
         api.get(`/api/goals/${goalId}/forecast`).catch(() => null),
-        api.get(`/api/goals/${goalId}/transactions`).catch(() => []),
+        api.get(`/api/goals/${goalId}/contributions`).catch(() => []),
       ]);
-      // 응답 대기 중 모달이 닫히거나 다른 목표로 전환됐으면 렌더링 생략
       if (!detailModal.open || detailModal.dataset.goalId !== goalId) return;
-      const transactions = unwrapList(txRes);
+      const contributions = unwrapList(contribRes);
+
+      const canContribute = progress.status !== 'ACHIEVED' && progress.status !== 'CANCELLED';
 
       let forecastHtml = '';
       if (forecast) {
@@ -240,7 +214,7 @@ export function renderGoals() {
           <div class="card mt-4">
             <div class="card-title">🔮 예상 달성 정보</div>
             <div class="flex-between mb-2">
-              <span class="text-muted">일평균 저축액</span>
+              <span class="text-muted">일평균 적립액</span>
               <span style="font-weight: 600;">${formatCurrency(forecast.daily_average)}</span>
             </div>
             ${forecast.forecast_date ? `
@@ -264,25 +238,20 @@ export function renderGoals() {
         `;
       }
 
-      let txHtml = '';
-      if (transactions && transactions.length > 0) {
-        const txItems = transactions.slice(0, 10).map(tx => `
-          <div class="flex-between" style="padding: 0.5rem 0; border-bottom: 1px solid var(--color-border);">
-            <div>
-              <div style="font-size: 0.9rem;">${escapeHtml(tx.description || '내용 없음')}</div>
-              <div class="text-muted" style="font-size: 0.75rem;">${tx.transaction_date}</div>
+      const contribItems = contributions.length > 0
+        ? contributions.map(c => `
+            <div class="flex-between" style="padding: 0.5rem 0; border-bottom: 1px solid var(--color-border);">
+              <div>
+                <div style="font-size: 0.9rem;">${escapeHtml(c.memo || '적립')}</div>
+                <div class="text-muted" style="font-size: 0.75rem;">${c.contributed_at}</div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.6rem;">
+                <span style="font-weight: 600;" class="text-income">+${formatCurrency(c.amount)}</span>
+                <button class="btn-contrib-delete text-muted" data-cid="${c.id}" style="font-size: 0.8rem;" aria-label="적립 삭제">✕</button>
+              </div>
             </div>
-            <span style="font-weight: 600;">${formatCurrency(tx.amount)}</span>
-          </div>
-        `).join('');
-
-        txHtml = `
-          <div class="card mt-4">
-            <div class="card-title">💰 기여 거래 내역 (최근 10건)</div>
-            ${txItems}
-          </div>
-        `;
-      }
+          `).join('')
+        : '<div class="text-center text-muted" style="padding: 0.5rem 0;">아직 적립 내역이 없습니다.</div>';
 
       const barColor = progress.status === 'ACHIEVED' ? '#40c057' : 'var(--color-primary)';
       const pct = Math.min(progress.progress_percentage, 100);
@@ -295,7 +264,7 @@ export function renderGoals() {
 
         <div class="card">
           <div class="flex-between mb-2">
-            <span class="text-muted">현재 금액</span>
+            <span class="text-muted">현재 적립</span>
             <span style="font-weight: 600;">${formatCurrency(progress.current_amount)}</span>
           </div>
           <div class="flex-between mb-2">
@@ -316,9 +285,61 @@ export function renderGoals() {
           </div>
         </div>
 
+        ${canContribute ? `
+        <div class="card mt-4">
+          <div class="card-title">💰 적립하기</div>
+          <form id="contrib-form">
+            <div style="display: flex; gap: 0.5rem;">
+              <input type="number" id="contrib-amount" class="form-control" min="1" step="1" placeholder="적립 금액" required style="flex: 1;" />
+              <button type="submit" class="btn btn-primary" id="contrib-submit" style="width: auto; padding: 0 1.2rem;">적립</button>
+            </div>
+            <input type="text" id="contrib-memo" class="form-control" placeholder="메모 (선택)" maxlength="200" style="margin-top: 0.5rem;" />
+          </form>
+        </div>` : ''}
+
         ${forecastHtml}
-        ${txHtml}
+
+        <div class="card mt-4">
+          <div class="card-title">📒 적립 내역</div>
+          ${contribItems}
+        </div>
       `;
+
+      // 적립하기 제출
+      const contribForm = content.querySelector('#contrib-form');
+      if (contribForm) {
+        contribForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const btn = content.querySelector('#contrib-submit');
+          btn.disabled = true;
+          const amount = parseInt(content.querySelector('#contrib-amount').value, 10);
+          const memo = content.querySelector('#contrib-memo').value.trim();
+          const payload = { amount };
+          if (memo) payload.memo = memo;
+          try {
+            await api.post(`/api/goals/${goalId}/contributions`, payload);
+            openDetail(goalId); // 상세 갱신
+            loadGoals();        // 목록 카드 진행률 갱신
+          } catch (err) {
+            alert('적립 실패: ' + err.message);
+            btn.disabled = false;
+          }
+        });
+      }
+
+      // 적립 삭제
+      content.querySelectorAll('.btn-contrib-delete').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          if (!confirm('이 적립 기록을 삭제할까요?')) return;
+          try {
+            await api.delete(`/api/goals/${goalId}/contributions/${btn.dataset.cid}`);
+            openDetail(goalId);
+            loadGoals();
+          } catch (err) {
+            alert('삭제 실패: ' + err.message);
+          }
+        });
+      });
     } catch (err) {
       content.innerHTML = '<div class="text-center text-expense">상세 정보를 불러오지 못했습니다.</div>';
     }
@@ -326,7 +347,7 @@ export function renderGoals() {
 
   div.querySelector('#detail-close').addEventListener('click', () => detailModal.close());
 
-  // 수정 모달
+  // 수정 모달 열기
   function openEdit(goal) {
     div.querySelector('#goal-modal-title').textContent = '목표 수정';
     div.querySelector('#g-submit').textContent = '수정 저장';
@@ -335,7 +356,6 @@ export function renderGoals() {
     div.querySelector('#g-amount').value = goal.target_amount;
     div.querySelector('#g-date').value = goal.target_date || '';
     div.querySelector('#g-desc').value = goal.description || '';
-    div.querySelector('#g-category').value = goal.category_id;
     modal.showModal();
   }
 
@@ -348,9 +368,7 @@ export function renderGoals() {
     modal.showModal();
   });
 
-  div.querySelector('#g-cancel').addEventListener('click', () => {
-    modal.close();
-  });
+  div.querySelector('#g-cancel').addEventListener('click', () => modal.close());
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -361,12 +379,9 @@ export function renderGoals() {
     const payload = {
       name: div.querySelector('#g-name').value,
       target_amount: parseInt(div.querySelector('#g-amount').value, 10),
-      category_id: categorySelect.value
     };
-
     const dateVal = div.querySelector('#g-date').value;
     if (dateVal) payload.target_date = dateVal;
-
     const descVal = div.querySelector('#g-desc').value;
     if (descVal) payload.description = descVal;
 
@@ -385,7 +400,6 @@ export function renderGoals() {
     }
   });
 
-  loadCategories();
   loadGoals();
   bindLayoutEvents(div);
 
