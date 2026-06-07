@@ -5,8 +5,10 @@ import { getSelectedMonth, setSelectedMonth, shiftMonth, formatMonthLabel } from
 // 월 선택기를 노출할 페이지 (기간 기반 화면)
 const MONTH_NAV_PAGES = ['dashboard', 'statistics', 'budget'];
 
-// 로그인 사용자 정보 캐시 (SPA 세션 동안 /api/auth/me 1회만 호출)
+// 로그인 사용자 정보 캐시. 토큰에 묶어두어 다른 계정으로 로그인하면(토큰 변경) 자동 무효화.
+// SPA라 로그아웃 시 새로고침이 없어 모듈 상태가 살아남으므로, 토큰 기준 캐시가 필수.
 let cachedUser = null;
+let cachedToken = null;
 
 export function createPageLayout(activeNav, contentHtml) {
   const navItems = [
@@ -120,18 +122,23 @@ export function bindLayoutEvents(container) {
       e.stopPropagation();
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');
+      // 계정별 UI 상태(선택 월, 모달 오픈 플래그 등)가 다음 로그인 계정으로 새지 않도록 정리
+      sessionStorage.clear();
+      cachedUser = null;
+      cachedToken = null;
       window.location.hash = '#/login';
     });
   });
 
-  // 헤더 사용자 이름
+  // 헤더 사용자 이름. 캐시가 현재 토큰과 일치할 때만 재사용(계정 전환 시 자동 갱신).
   const userEl = container.querySelector('#header-username');
   if (userEl) {
-    if (cachedUser) {
+    const token = localStorage.getItem('access_token');
+    if (cachedUser && cachedToken === token) {
       userEl.textContent = cachedUser.name;
     } else {
       api.get('/api/auth/me')
-        .then(u => { cachedUser = u; userEl.textContent = u.name; })
+        .then(u => { cachedUser = u; cachedToken = token; userEl.textContent = u.name; })
         .catch(() => {});
     }
   }
