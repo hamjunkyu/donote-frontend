@@ -270,7 +270,7 @@ export function renderDashboard() {
             </div>
           </div>
           <div style="text-align: right;">
-            <span style="font-weight: 700; font-size: 1.05rem; color: ${isIncome ? 'var(--color-income)' : 'var(--color-text-primary)'}">
+            <span style="font-weight: 700; font-size: 1.05rem; color: ${isIncome ? 'var(--color-income)' : 'var(--color-expense)'}">
               ${isIncome ? '+' : '-'}${formatCurrency(tx.amount)}
             </span>
             ${hasSettledShare ? `

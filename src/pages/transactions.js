@@ -236,7 +236,7 @@ export function renderTransactions() {
           </div>
         </div>
         <div style="text-align: right;">
-          <div style="font-weight: 700; font-size: 1.1rem; margin-bottom: 4px; color: ${isIncome ? 'var(--color-income)' : 'var(--color-text-primary)'}">
+          <div style="font-weight: 700; font-size: 1.1rem; margin-bottom: 4px; color: ${isIncome ? 'var(--color-income)' : 'var(--color-expense)'}">
             ${isIncome ? '+' : '-'}${formatCurrency(tx.amount)}
           </div>
           ${hasSettledShare ? `
